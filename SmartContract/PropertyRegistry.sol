@@ -254,3 +254,26 @@ public
         revert("Unauthorized");
     }
 }
+
+function verifyDocument(
+    uint256 _propertyId,
+    string memory _documentHash
+)
+public
+view
+returns(bool)
+{
+    return
+        keccak256(
+            abi.encodePacked(
+                documents[_propertyId]
+                .documentHash
+            )
+        )
+        ==
+        keccak256(
+            abi.encodePacked(
+                _documentHash
+            )
+        );
+}
