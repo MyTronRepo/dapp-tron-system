@@ -12,6 +12,20 @@ contract PropertyRegistry {
     constructor() {
         admin = msg.sender;
     }
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
+
+    modifier onlyPropertyOwner(uint256 _propertyId) {
+        require(
+            properties[_propertyId].currentOwner == msg.sender,
+            "Not property owner"
+        );
+
+        _;
+    }
 }
 
 struct Property {
