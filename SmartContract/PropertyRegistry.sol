@@ -3,9 +3,15 @@
 pragma solidity ^0.8.0;
 
 contract PropertyRegistry {
+    address public admin;
+
     uint256 public propertyCounter;
 
     uint256 public transferCounter;
+
+    constructor() {
+        admin = msg.sender;
+    }
 }
 
 struct Property {
