@@ -176,8 +176,6 @@ onlyPropertyOwner(_propertyId)
     );
 }
 
-
-
 function requestTransfer(
     uint256 _propertyId,
     address _buyer
@@ -208,4 +206,51 @@ onlyPropertyOwner(_propertyId)
         _propertyId,
         _buyer
     );
+}
+
+
+
+function approveTransfer(
+    uint256 _transferId
+)
+public
+{
+    TransferRequest storage transferRequest =
+        transferRequests[_transferId];
+
+    require(
+        !transferRequest.completed,
+        "Transfer already completed"
+    );
+
+    if(msg.sender == transferRequest.buyer)
+    {
+        transferRequest.buyerApproved = true;
+    }
+
+    else if(msg.sender == admin)
+    {
+        require(
+            transferRequest.buyerApproved,
+            "Buyer approval required"
+        );
+
+        transferRequest.adminApproved = true;
+
+        properties[
+            transferRequest.propertyId
+        ].currentOwner =
+            transferRequest.buyer;
+
+        transferRequest.completed = true;
+
+        emit TransferApproved(
+            _transferId
+        );
+    }
+
+    else
+    {
+        revert("Unauthorized");
+    }
 }
