@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require("uuid");
+
 const {
     successResponse,
     errorResponse
@@ -7,6 +8,7 @@ const {
 const properties = [];
 
 const healthCheck = async (req, res) => {
+
     return successResponse(
         res,
         {
@@ -14,10 +16,13 @@ const healthCheck = async (req, res) => {
         },
         "Backend is running"
     );
+
 };
 
 const registerProperty = async (req, res) => {
+
     try {
+
         const {
             province,
             city,
@@ -28,8 +33,11 @@ const registerProperty = async (req, res) => {
             usageType,
             constructionStatus,
             latitude,
-            longitude
+            longitude,
+            owners
         } = req.body;
+
+        // Property Validation
 
         if (
             !province ||
@@ -37,15 +45,67 @@ const registerProperty = async (req, res) => {
             !district ||
             !parcelNumber
         ) {
+
             return errorResponse(
                 res,
-                "Required fields are missing",
+                "Required property fields are missing",
                 400
             );
+
+        }
+
+        // Owners Validation
+
+        if (
+            !owners ||
+            !Array.isArray(owners) ||
+            owners.length === 0
+        ) {
+
+            return errorResponse(
+                res,
+                "At least one owner is required",
+                400
+            );
+
+        }
+
+        let totalShare = 0;
+
+        for (const owner of owners) {
+
+            if (
+                !owner.walletAddress ||
+                !owner.nationalIdHash ||
+                owner.share === undefined
+            ) {
+
+                return errorResponse(
+                    res,
+                    "Invalid owner information",
+                    400
+                );
+
+            }
+
+            totalShare += Number(owner.share);
+
+        }
+
+        if (totalShare !== 100) {
+
+            return errorResponse(
+                res,
+                "Total ownership share must equal 100",
+                400
+            );
+
         }
 
         const property = {
+
             propertyId: uuidv4(),
+
             province,
             city,
             district,
@@ -56,8 +116,13 @@ const registerProperty = async (req, res) => {
             constructionStatus,
             latitude,
             longitude,
+
+            owners,
+
             status: "Pending",
+
             exists: true
+
         };
 
         properties.push(property);
@@ -68,7 +133,8 @@ const registerProperty = async (req, res) => {
             "Property registered successfully"
         );
 
-    } catch (error) {
+    }
+    catch (error) {
 
         return errorResponse(
             res,
@@ -77,6 +143,7 @@ const registerProperty = async (req, res) => {
         );
 
     }
+
 };
 
 module.exports = {
