@@ -3,6 +3,10 @@
 pragma solidity ^0.8.20;
 
 contract DappTronSystem {
+    // ==========================================
+    // Enums
+    // ==========================================
+
     enum PropertyStatus {
         Pending,
         Verified,
@@ -23,6 +27,10 @@ contract DappTronSystem {
         Rejected,
         Expired
     }
+
+    // ==========================================
+    // Structs
+    // ==========================================
 
     struct Property {
         string propertyId;
@@ -90,9 +98,48 @@ contract DappTronSystem {
 
     mapping(string => Ownership[]) private propertyOwners;
 
-    mapping(string => Document) private documents;
+    mapping(string => Document[]) private propertyDocuments;
 
     mapping(uint256 => TransferRequest) private transferRequests;
 
     mapping(string => TransferHistory[]) private transferHistories;
+
+    string[] private propertyIds;
+
+    // ==========================================
+    // Events
+    // ==========================================
+
+    event PropertyRegistered(string propertyId);
+
+    event PropertyVerified(string propertyId);
+
+    event PropertyRejected(string propertyId);
+
+    event DocumentRegistered(string propertyId, bytes32 documentHash);
+
+    event DocumentRevoked(string propertyId, bytes32 documentHash);
+
+    event TransferRequested(uint256 transferId);
+
+    event TransferApproved(uint256 transferId);
+
+    event AdminChanged(address oldAdmin, address newAdmin);
+
+    // ==========================================
+    // Constructor
+    // ==========================================
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    // ==========================================
+    // Modifiers
+    // ==========================================
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
 }
