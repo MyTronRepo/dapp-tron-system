@@ -9,10 +9,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Routes
 const propertyRoutes = require("./routes/propertyRoutes");
+const documentRoutes = require("./routes/documentRoutes");
 
+// Route Registration
 app.use("/api/properties", propertyRoutes);
+app.use("/api/documents", documentRoutes);
 
+// Root Route
 app.get("/", (req, res) => {
     res.status(200).json({
         success: true,
