@@ -129,8 +129,80 @@ const getDocumentByPropertyId = async (
 
 };
 
+const verifyDocument = async (
+    req,
+    res
+) => {
+
+    const {
+        propertyId
+    } = req.params;
+
+    const document =
+        documents.find(
+            doc =>
+                doc.propertyId === propertyId
+        );
+
+    if (!document) {
+
+        return errorResponse(
+            res,
+            "Document not found",
+            404
+        );
+
+    }
+
+    document.status = "Valid";
+
+    return successResponse(
+        res,
+        document,
+        "Document verified successfully"
+    );
+
+};
+
+const revokeDocument = async (
+    req,
+    res
+) => {
+
+    const {
+        propertyId
+    } = req.params;
+
+    const document =
+        documents.find(
+            doc =>
+                doc.propertyId === propertyId
+        );
+
+    if (!document) {
+
+        return errorResponse(
+            res,
+            "Document not found",
+            404
+        );
+
+    }
+
+    document.status = "Revoked";
+
+    return successResponse(
+        res,
+        document,
+        "Document revoked successfully"
+    );
+
+};
+
 module.exports = {
     uploadDocument,
     getAllDocuments,
-    getDocumentByPropertyId
+    getDocumentByPropertyId,
+    verifyDocument,
+    revokeDocument
 };

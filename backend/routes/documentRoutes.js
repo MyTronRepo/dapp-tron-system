@@ -8,7 +8,9 @@ const upload =
 const {
     uploadDocument,
     getAllDocuments,
-    getDocumentByPropertyId
+    getDocumentByPropertyId,
+    verifyDocument,
+    revokeDocument
 } = require("../controllers/documentController");
 
 router.post(
@@ -27,5 +29,14 @@ router.get(
     getDocumentByPropertyId
 );
 
-module.exports = router;
+router.patch(
+    "/verify/:propertyId",
+    verifyDocument
+);
 
+router.patch(
+    "/revoke/:propertyId",
+    revokeDocument
+);
+
+module.exports = router;
