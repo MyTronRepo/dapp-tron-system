@@ -6,7 +6,9 @@ const upload =
     require("../middleware/uploadMiddleware");
 
 const {
-    uploadDocument
+    uploadDocument,
+    getAllDocuments,
+    getDocumentByPropertyId
 } = require("../controllers/documentController");
 
 router.post(
@@ -15,4 +17,15 @@ router.post(
     uploadDocument
 );
 
+router.get(
+    "/",
+    getAllDocuments
+);
+
+router.get(
+    "/:propertyId",
+    getDocumentByPropertyId
+);
+
 module.exports = router;
+
