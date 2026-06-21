@@ -8,7 +8,11 @@ const {
 
     getAllTransfers,
 
-    approveTransferByBuyer
+    approveTransferByBuyer,
+
+    approveTransferByAdmin,
+
+    getTransferHistory
 
 } = require(
     "../controllers/transferController"
@@ -24,9 +28,19 @@ router.get(
     getAllTransfers
 );
 
+router.get(
+    "/history",
+    getTransferHistory
+);
+
 router.patch(
     "/buyer-approve/:transferId",
     approveTransferByBuyer
+);
+
+router.patch(
+    "/admin-approve/:transferId",
+    approveTransferByAdmin
 );
 
 module.exports = router;

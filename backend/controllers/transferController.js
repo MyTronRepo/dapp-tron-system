@@ -6,7 +6,9 @@ const {
 } = require("../utils/responseHandler");
 
 const {
-    transfers
+    transfers,
+    properties,
+    transferHistories
 } = require("../data/mockDb");
 
 const createTransferRequest = async (
@@ -151,7 +153,8 @@ const approveTransferByBuyer = async (
 
         }
 
-        transfer.buyerApproved = true;
+        transfer.buyerApproved =
+            true;
 
         transfer.status =
             "PendingAdmin";
@@ -175,12 +178,205 @@ const approveTransferByBuyer = async (
 
 };
 
+const approveTransferByAdmin = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const {
+            transferId
+        } = req.params;
+
+        const transfer =
+            transfers.find(
+                item =>
+                    item.transferId === transferId
+            );
+
+        if (!transfer) {
+
+            return errorResponse(
+                res,
+                "Transfer not found",
+                404
+            );
+
+        }
+
+        if (
+            transfer.status !==
+            "PendingAdmin"
+        ) {
+
+            return errorResponse(
+                res,
+                "Transfer must be approved by buyer first",
+                400
+            );
+
+        }
+
+        const property =
+            properties.find(
+                item =>
+                    item.propertyId ===
+                    transfer.propertyId
+            );
+
+        if (!property) {
+
+            return errorResponse(
+                res,
+                "Property not found",
+                404
+            );
+
+        }
+
+        const seller =
+            property.owners.find(
+                owner =>
+                    owner.walletAddress ===
+                    transfer.seller
+            );
+
+        if (!seller) {
+
+            return errorResponse(
+                res,
+                "Seller not found",
+                404
+            );
+
+        }
+
+        if (
+            seller.share <
+            transfer.transferredShare
+        ) {
+
+            return errorResponse(
+                res,
+                "Seller share is insufficient",
+                400
+            );
+
+        }
+
+        seller.share -=
+            Number(
+                transfer.transferredShare
+            );
+
+        let buyer =
+            property.owners.find(
+                owner =>
+                    owner.walletAddress ===
+                    transfer.buyer
+            );
+
+        if (buyer) {
+
+            buyer.share +=
+                Number(
+                    transfer.transferredShare
+                );
+
+        } else {
+
+            property.owners.push({
+
+                walletAddress:
+                    transfer.buyer,
+
+                nationalIdHash:
+                    "NEW_OWNER",
+
+                share:
+                    Number(
+                        transfer.transferredShare
+                    )
+
+            });
+
+        }
+
+        transfer.adminApproved =
+            true;
+
+        transfer.status =
+            "Approved";
+
+        transferHistories.push({
+
+            transferId:
+                transfer.transferId,
+
+            propertyId:
+                transfer.propertyId,
+
+            seller:
+                transfer.seller,
+
+            buyer:
+                transfer.buyer,
+
+            transferredShare:
+                transfer.transferredShare,
+
+            timestamp:
+                Date.now()
+
+        });
+
+        return successResponse(
+            res,
+            {
+                transfer,
+                owners:
+                    property.owners
+            },
+            "Transfer approved by admin"
+        );
+
+    }
+    catch (error) {
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
+
+};
+
+const getTransferHistory = async (
+    req,
+    res
+) => {
+
+    return successResponse(
+        res,
+        transferHistories,
+        "Transfer history fetched successfully"
+    );
+
+};
+
 module.exports = {
 
     createTransferRequest,
 
     getAllTransfers,
 
-    approveTransferByBuyer
+    approveTransferByBuyer,
+
+    approveTransferByAdmin,
+
+    getTransferHistory
 
 };
