@@ -9,6 +9,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const propertyRoutes = require("./routes/propertyRoutes");
+
+app.use("/api/properties", propertyRoutes);
+
 app.get("/", (req, res) => {
     res.status(200).json({
         success: true,
