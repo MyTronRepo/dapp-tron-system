@@ -1,15 +1,15 @@
 const { v4: uuidv4 } = require("uuid");
 
+const Transfer =
+    require("../models/Transfer");
+
+const Property =
+    require("../models/Property");
+
 const {
     successResponse,
     errorResponse
 } = require("../utils/responseHandler");
-
-const {
-    transfers,
-    properties,
-    transferHistories
-} = require("../data/mockDb");
 
 const createTransferRequest = async (
     req,
@@ -52,34 +52,32 @@ const createTransferRequest = async (
 
         }
 
-        const transfer = {
+        const transfer =
+            await Transfer.create({
 
-            transferId: uuidv4(),
+                transferId: uuidv4(),
 
-            propertyId,
+                propertyId,
 
-            seller,
+                seller,
 
-            buyer,
+                buyer,
 
-            transferredShare,
+                transferredShare,
 
-            buyerApproved: false,
+                buyerApproved: false,
 
-            adminApproved: false,
+                adminApproved: false,
 
-            timestamp: Date.now(),
+                timestamp: Date.now(),
 
-            expireAt:
-                Date.now() +
-                (7 * 24 * 60 * 60 * 1000),
+                expireAt:
+                    Date.now() +
+                    (7 * 24 * 60 * 60 * 1000),
 
-            status:
-                "PendingBuyer"
+                status: "PendingBuyer"
 
-        };
-
-        transfers.push(transfer);
+            });
 
         return successResponse(
             res,
@@ -105,11 +103,58 @@ const getAllTransfers = async (
     res
 ) => {
 
-    return successResponse(
-        res,
-        transfers,
-        "Transfers fetched successfully"
-    );
+    try {
+
+        const transfers =
+            await Transfer.find();
+
+        return successResponse(
+            res,
+            transfers,
+            "Transfers fetched successfully"
+        );
+
+    }
+    catch (error) {
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
+
+};
+
+const getTransferHistory = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const history =
+            await Transfer.find({
+                status: "Approved"
+            });
+
+        return successResponse(
+            res,
+            history,
+            "Transfer history fetched successfully"
+        );
+
+    }
+    catch (error) {
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
 
 };
 
@@ -125,10 +170,9 @@ const approveTransferByBuyer = async (
         } = req.params;
 
         const transfer =
-            transfers.find(
-                item =>
-                    item.transferId === transferId
-            );
+            await Transfer.findOne({
+                transferId
+            });
 
         if (!transfer) {
 
@@ -153,11 +197,12 @@ const approveTransferByBuyer = async (
 
         }
 
-        transfer.buyerApproved =
-            true;
+        transfer.buyerApproved = true;
 
         transfer.status =
             "PendingAdmin";
+
+        await transfer.save();
 
         return successResponse(
             res,
@@ -190,10 +235,9 @@ const approveTransferByAdmin = async (
         } = req.params;
 
         const transfer =
-            transfers.find(
-                item =>
-                    item.transferId === transferId
-            );
+            await Transfer.findOne({
+                transferId
+            });
 
         if (!transfer) {
 
@@ -219,11 +263,10 @@ const approveTransferByAdmin = async (
         }
 
         const property =
-            properties.find(
-                item =>
-                    item.propertyId ===
+            await Property.findOne({
+                propertyId:
                     transfer.propertyId
-            );
+            });
 
         if (!property) {
 
@@ -303,33 +346,13 @@ const approveTransferByAdmin = async (
 
         }
 
-        transfer.adminApproved =
-            true;
+        await property.save();
 
-        transfer.status =
-            "Approved";
+        transfer.adminApproved = true;
 
-        transferHistories.push({
+        transfer.status = "Approved";
 
-            transferId:
-                transfer.transferId,
-
-            propertyId:
-                transfer.propertyId,
-
-            seller:
-                transfer.seller,
-
-            buyer:
-                transfer.buyer,
-
-            transferredShare:
-                transfer.transferredShare,
-
-            timestamp:
-                Date.now()
-
-        });
+        await transfer.save();
 
         return successResponse(
             res,
@@ -354,29 +377,16 @@ const approveTransferByAdmin = async (
 
 };
 
-const getTransferHistory = async (
-    req,
-    res
-) => {
-
-    return successResponse(
-        res,
-        transferHistories,
-        "Transfer history fetched successfully"
-    );
-
-};
-
 module.exports = {
 
     createTransferRequest,
 
     getAllTransfers,
 
+    getTransferHistory,
+
     approveTransferByBuyer,
 
-    approveTransferByAdmin,
-
-    getTransferHistory
+    approveTransferByAdmin
 
 };
