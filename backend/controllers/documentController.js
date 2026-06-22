@@ -1,3 +1,6 @@
+const Document =
+    require("../models/Document");
+
 const {
     generateFileHash
 } = require("../services/hashService");
@@ -6,10 +9,6 @@ const {
     successResponse,
     errorResponse
 } = require("../utils/responseHandler");
-
-const {
-    documents
-} = require("../data/mockDb");
 
 const uploadDocument = async (
     req,
@@ -45,26 +44,27 @@ const uploadDocument = async (
         }
 
         const documentHash =
-            generateFileHash(file.path);
+            generateFileHash(
+                file.path
+            );
 
-        const document = {
+        const document =
+            await Document.create({
 
-            propertyId,
+                propertyId,
 
-            documentHash,
+                documentHash,
 
-            documentURI:
-                file.filename,
+                documentURI:
+                    file.filename,
 
-            issueDate:
-                Date.now(),
+                issueDate:
+                    Date.now(),
 
-            status:
-                "Pending"
+                status:
+                    "Pending"
 
-        };
-
-        documents.push(document);
+            });
 
         return successResponse(
             res,
@@ -90,11 +90,27 @@ const getAllDocuments = async (
     res
 ) => {
 
-    return successResponse(
-        res,
-        documents,
-        "Documents fetched successfully"
-    );
+    try {
+
+        const documents =
+            await Document.find();
+
+        return successResponse(
+            res,
+            documents,
+            "Documents fetched successfully"
+        );
+
+    }
+    catch (error) {
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
 
 };
 
@@ -103,31 +119,45 @@ const getDocumentByPropertyId = async (
     res
 ) => {
 
-    const {
-        propertyId
-    } = req.params;
+    try {
 
-    const result =
-        documents.filter(
-            doc =>
-                doc.propertyId === propertyId
-        );
+        const {
+            propertyId
+        } = req.params;
 
-    if (result.length === 0) {
+        const documents =
+            await Document.find({
+                propertyId
+            });
 
-        return errorResponse(
+        if (
+            documents.length === 0
+        ) {
+
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+
+        }
+
+        return successResponse(
             res,
-            "Document not found",
-            404
+            documents,
+            "Document fetched successfully"
         );
 
     }
+    catch (error) {
 
-    return successResponse(
-        res,
-        result,
-        "Document fetched successfully"
-    );
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
 
 };
 
@@ -136,33 +166,48 @@ const verifyDocument = async (
     res
 ) => {
 
-    const {
-        propertyId
-    } = req.params;
+    try {
 
-    const document =
-        documents.find(
-            doc =>
-                doc.propertyId === propertyId
-        );
+        const {
+            propertyId
+        } = req.params;
 
-    if (!document) {
+        const document =
+            await Document.findOne({
+                propertyId
+            });
 
-        return errorResponse(
+        if (!document) {
+
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+
+        }
+
+        document.status =
+            "Valid";
+
+        await document.save();
+
+        return successResponse(
             res,
-            "Document not found",
-            404
+            document,
+            "Document verified successfully"
         );
 
     }
+    catch (error) {
 
-    document.status = "Valid";
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
 
-    return successResponse(
-        res,
-        document,
-        "Document verified successfully"
-    );
+    }
 
 };
 
@@ -171,40 +216,61 @@ const revokeDocument = async (
     res
 ) => {
 
-    const {
-        propertyId
-    } = req.params;
+    try {
 
-    const document =
-        documents.find(
-            doc =>
-                doc.propertyId === propertyId
+        const {
+            propertyId
+        } = req.params;
+
+        const document =
+            await Document.findOne({
+                propertyId
+            });
+
+        if (!document) {
+
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+
+        }
+
+        document.status =
+            "Revoked";
+
+        await document.save();
+
+        return successResponse(
+            res,
+            document,
+            "Document revoked successfully"
         );
 
-    if (!document) {
+    }
+    catch (error) {
 
         return errorResponse(
             res,
-            "Document not found",
-            404
+            error.message,
+            500
         );
 
     }
 
-    document.status = "Revoked";
-
-    return successResponse(
-        res,
-        document,
-        "Document revoked successfully"
-    );
-
 };
 
 module.exports = {
+
     uploadDocument,
+
     getAllDocuments,
+
     getDocumentByPropertyId,
+
     verifyDocument,
+
     revokeDocument
+
 };
