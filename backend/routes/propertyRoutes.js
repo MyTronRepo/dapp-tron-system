@@ -10,19 +10,21 @@ const {
     updatePropertyStatus
 } = require("../controllers/propertyController");
 
+const { authenticate } = require("../middleware/authMiddleware");
+
 // HEALTH
 router.get("/health", healthCheck);
 
-// REGISTER
-router.post("/register", registerProperty);
+// REGISTER (protected)
+router.post("/register", authenticate, registerProperty);
 
-// SEARCH
-router.get("/search", searchProperties);
+// SEARCH (protected)
+router.get("/search", authenticate, searchProperties);
 
-// GET BY ID
-router.get("/:propertyId", getPropertyById);
+// GET BY ID (protected)
+router.get("/:propertyId", authenticate, getPropertyById);
 
-// UPDATE STATUS
-router.patch("/:propertyId/status", updatePropertyStatus);
+// UPDATE STATUS (protected)
+router.patch("/:propertyId/status", authenticate, updatePropertyStatus);
 
 module.exports = router;

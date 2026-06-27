@@ -4,23 +4,14 @@ const authenticate = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
 
-        if (!authHeader) {
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return res.status(401).json({
                 success: false,
                 message: "No token provided"
             });
         }
 
-        const token = authHeader.startsWith("Bearer ")
-            ? authHeader.split(" ")[1]
-            : authHeader;
-
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: "No token provided"
-            });
-        }
+        const token = authHeader.split(" ")[1];
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -36,8 +27,9 @@ const authenticate = (req, res, next) => {
     }
 };
 
-const authorize = (role) => {
+const authorize = (...roles) => {
     return (req, res, next) => {
+
         if (!req.user) {
             return res.status(401).json({
                 success: false,
@@ -45,7 +37,7 @@ const authorize = (role) => {
             });
         }
 
-        if (role && req.user.role !== role) {
+        if (roles.length && !roles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
                 message: "Forbidden"
