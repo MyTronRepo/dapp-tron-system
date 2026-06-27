@@ -3,22 +3,25 @@ const express = require("express");
 const router = express.Router();
 
 const {
+
     healthCheck,
+
     registerProperty,
-    getPropertyById,
-    updateProperty,
-    deleteProperty
+
+    searchProperties
+
 } = require("../controllers/propertyController");
 
 router.get("/health", healthCheck);
 
-router.post("/register", registerProperty);
+router.post(
+    "/register",
+    registerProperty
+);
 
-// NEW APIs
-router.get("/:propertyId", getPropertyById);
-
-router.put("/:propertyId", updateProperty);
-
-router.delete("/:propertyId", deleteProperty);
+router.get(
+    "/search",
+    searchProperties
+);
 
 module.exports = router;
