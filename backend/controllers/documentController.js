@@ -160,10 +160,67 @@ const getDocumentsByProperty = async (req, res) => {
 
 };
 
+const getDocumentById = async (req, res) => {
+
+    try {
+
+        const { documentId } = req.params;
+
+        const document =
+            await Document.findOne({
+
+                documentId
+
+            });
+
+        if (!document) {
+
+            return errorResponse(
+
+                res,
+
+                "Document not found",
+
+                404
+
+            );
+
+        }
+
+        return successResponse(
+
+            res,
+
+            document,
+
+            "Document fetched successfully"
+
+        );
+
+    }
+
+    catch (error) {
+
+        return errorResponse(
+
+            res,
+
+            error.message,
+
+            500
+
+        );
+
+    }
+
+};
+
 module.exports = {
 
     registerDocument,
 
-    getDocumentsByProperty
+    getDocumentsByProperty,
+
+    getDocumentById
 
 };

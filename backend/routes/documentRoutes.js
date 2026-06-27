@@ -6,7 +6,9 @@ const {
 
     registerDocument,
 
-    getDocumentsByProperty
+    getDocumentsByProperty,
+
+    getDocumentById
 
 } = require("../controllers/documentController");
 
@@ -18,6 +20,11 @@ router.post(
 router.get(
     "/property/:propertyId",
     getDocumentsByProperty
+);
+
+router.get(
+    "/:documentId",
+    getDocumentById
 );
 
 module.exports = router;
