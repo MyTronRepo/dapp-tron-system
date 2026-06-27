@@ -5,37 +5,26 @@ const router = express.Router();
 const {
 
     healthCheck,
-
     registerProperty,
-
     searchProperties,
-
     getPropertyById,
-
     updatePropertyStatus
 
 } = require("../controllers/propertyController");
 
+// Health
 router.get("/health", healthCheck);
 
-router.post(
-    "/register",
-    registerProperty
-);
+// Create Property
+router.post("/register", registerProperty);
 
-router.get(
-    "/search",
-    searchProperties
-);
+// Get All
+router.get("/search", searchProperties);
 
-router.get(
-    "/:propertyId",
-    getPropertyById
-);
+// Get By ID
+router.get("/:propertyId", getPropertyById);
 
-router.patch(
-    "/:propertyId/status",
-    updatePropertyStatus
-);
+// Update Status
+router.patch("/:propertyId/status", updatePropertyStatus);
 
 module.exports = router;

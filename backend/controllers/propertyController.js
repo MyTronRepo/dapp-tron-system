@@ -7,104 +7,44 @@ const {
     errorResponse
 } = require("../utils/responseHandler");
 
+const {
+    registerPropertyOnBlockchain
+} = require("../services/tronService");
+
+// HEALTH CHECK
 const healthCheck = async (req, res) => {
 
-    return successResponse(
-        res,
-        {
-            service: "DApp TRON Backend"
-        },
-        "Backend is running"
-    );
+    return res.json({
+        success: true,
+        message: "Property service is running"
+    });
 
 };
 
+// REGISTER PROPERTY
 const registerProperty = async (req, res) => {
 
     try {
 
         const {
-
             province,
-
             city,
-
             district,
-
             parcelNumber,
-
             area,
-
             buildYear,
-
             usageType,
-
             constructionStatus,
-
             latitude,
-
             longitude,
-
             owners
-
         } = req.body;
 
-        if (
-            !province ||
-            !city ||
-            !district ||
-            !parcelNumber
-        ) {
+        if (!owners || !Array.isArray(owners) || owners.length === 0) {
 
             return errorResponse(
                 res,
-                "Required property fields are missing",
-                400
-            );
-
-        }
-
-        if (
-            !owners ||
-            !Array.isArray(owners) ||
-            owners.length === 0
-        ) {
-
-            return errorResponse(
-                res,
-                "At least one owner is required",
-                400
-            );
-
-        }
-
-        let totalShare = 0;
-
-        for (const owner of owners) {
-
-            if (
-                !owner.walletAddress ||
-                !owner.nationalIdHash ||
-                owner.share === undefined
-            ) {
-
-                return errorResponse(
-                    res,
-                    "Invalid owner information",
-                    400
-                );
-
-            }
-
-            totalShare += Number(owner.share);
-
-        }
-
-        if (totalShare !== 100) {
-
-            return errorResponse(
-                res,
-                "Total ownership share must equal 100",
+                "Owners are required",
                 400
             );
 
@@ -113,34 +53,38 @@ const registerProperty = async (req, res) => {
         const property = await Property.create({
 
             propertyId: uuidv4(),
-
             province,
-
             city,
-
             district,
-
             parcelNumber,
-
             area,
-
             buildYear,
-
             usageType,
-
             constructionStatus,
-
             latitude,
-
             longitude,
-
             owners,
-
             status: "Pending",
-
             exists: true
 
         });
+
+        try {
+
+            if (owners?.[0]?.walletAddress) {
+
+                await registerPropertyOnBlockchain(
+                    property.propertyId,
+                    owners[0].walletAddress
+                );
+
+            }
+
+        } catch (err) {
+
+            console.log("Blockchain Error:", err.message);
+
+        }
 
         return successResponse(
             res,
@@ -148,8 +92,7 @@ const registerProperty = async (req, res) => {
             "Property registered successfully"
         );
 
-    }
-    catch (error) {
+    } catch (error) {
 
         return errorResponse(
             res,
@@ -161,37 +104,12 @@ const registerProperty = async (req, res) => {
 
 };
 
+// SEARCH PROPERTIES
 const searchProperties = async (req, res) => {
 
     try {
 
-        const {
-
-            province,
-
-            city,
-
-            district,
-
-            usageType,
-
-            status
-
-        } = req.query;
-
-        const filter = {};
-
-        if (province) filter.province = province;
-
-        if (city) filter.city = city;
-
-        if (district) filter.district = district;
-
-        if (usageType) filter.usageType = usageType;
-
-        if (status) filter.status = status;
-
-        const properties = await Property.find(filter);
+        const properties = await Property.find();
 
         return successResponse(
             res,
@@ -199,8 +117,7 @@ const searchProperties = async (req, res) => {
             "Properties fetched successfully"
         );
 
-    }
-    catch (error) {
+    } catch (error) {
 
         return errorResponse(
             res,
@@ -212,6 +129,7 @@ const searchProperties = async (req, res) => {
 
 };
 
+// GET BY ID
 const getPropertyById = async (req, res) => {
 
     try {
@@ -238,8 +156,7 @@ const getPropertyById = async (req, res) => {
             "Property fetched successfully"
         );
 
-    }
-    catch (error) {
+    } catch (error) {
 
         return errorResponse(
             res,
@@ -251,43 +168,13 @@ const getPropertyById = async (req, res) => {
 
 };
 
+// UPDATE STATUS
 const updatePropertyStatus = async (req, res) => {
 
     try {
 
         const { propertyId } = req.params;
-
         const { status } = req.body;
-
-        if (!status) {
-
-            return errorResponse(
-                res,
-                "Status is required",
-                400
-            );
-
-        }
-
-        const allowedStatus = [
-
-            "Pending",
-
-            "Approved",
-
-            "Rejected"
-
-        ];
-
-        if (!allowedStatus.includes(status)) {
-
-            return errorResponse(
-                res,
-                "Invalid status value",
-                400
-            );
-
-        }
 
         const property = await Property.findOne({
             propertyId
@@ -313,8 +200,7 @@ const updatePropertyStatus = async (req, res) => {
             "Property status updated successfully"
         );
 
-    }
-    catch (error) {
+    } catch (error) {
 
         return errorResponse(
             res,
@@ -327,15 +213,9 @@ const updatePropertyStatus = async (req, res) => {
 };
 
 module.exports = {
-
     healthCheck,
-
     registerProperty,
-
     searchProperties,
-
     getPropertyById,
-
     updatePropertyStatus
-
 };

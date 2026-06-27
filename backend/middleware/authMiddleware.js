@@ -1,60 +1,32 @@
 const jwt = require("jsonwebtoken");
 
-const {
-    errorResponse
-} = require("../utils/responseHandler");
-
-const authenticate = (
-
-    req,
-
-    res,
-
-    next
-
-) => {
-
-    const authHeader =
-        req.headers.authorization;
-
-    if (
-
-        !authHeader ||
-
-        !authHeader.startsWith("Bearer ")
-
-    ) {
-
-        return errorResponse(
-
-            res,
-
-            "Access denied",
-
-            401
-
-        );
-
-    }
-
-    const token =
-        authHeader.split(" ")[1];
+const authenticate = (req, res, next) => {
 
     try {
 
-        const decoded =
-            jwt.verify(
+        const token = req.headers.authorization?.split(" ")[1];
 
-                token,
+        if (!token) {
 
-                process.env.JWT_SECRET ||
+            return res.status(401).json({
 
-                "dapptronsecret"
+                success: false,
 
-            );
+                message: "No token provided"
 
-        req.user =
-            decoded;
+            });
+
+        }
+
+        const decoded = jwt.verify(
+
+            token,
+
+            process.env.JWT_SECRET
+
+        );
+
+        req.user = decoded;
 
         next();
 
@@ -62,55 +34,43 @@ const authenticate = (
 
     catch (error) {
 
-        return errorResponse(
+        return res.status(401).json({
 
-            res,
+            success: false,
 
-            "Invalid token",
+            message: "Invalid token"
 
-            401
-
-        );
+        });
 
     }
 
 };
 
-const authorize = (
+const authorize = (role) => {
 
-    ...roles
+    return (req, res, next) => {
 
-) => {
+        if (!req.user) {
 
-    return (
+            return res.status(401).json({
 
-        req,
+                success: false,
 
-        res,
+                message: "Unauthorized"
 
-        next
+            });
 
-    ) => {
+        }
 
-        if (
+        if (req.user.role !== role) {
 
-            !roles.includes(
+            return res.status(403).json({
 
-                req.user.role
+                success: false,
 
-            )
+                message: "Forbidden: Access denied"
 
-        ) {
-
-            return errorResponse(
-
-                res,
-
-                "Permission denied",
-
-                403
-
-            );
+            });
 
         }
 
