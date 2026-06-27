@@ -13,19 +13,15 @@ const {
 
 // HEALTH CHECK
 const healthCheck = async (req, res) => {
-
     return res.json({
         success: true,
         message: "Property service is running"
     });
-
 };
 
 // REGISTER PROPERTY
 const registerProperty = async (req, res) => {
-
     try {
-
         const {
             province,
             city,
@@ -41,17 +37,14 @@ const registerProperty = async (req, res) => {
         } = req.body;
 
         if (!owners || !Array.isArray(owners) || owners.length === 0) {
-
             return errorResponse(
                 res,
                 "Owners are required",
                 400
             );
-
         }
 
         const property = await Property.create({
-
             propertyId: uuidv4(),
             province,
             city,
@@ -66,24 +59,17 @@ const registerProperty = async (req, res) => {
             owners,
             status: "Pending",
             exists: true
-
         });
 
         try {
-
             if (owners?.[0]?.walletAddress) {
-
                 await registerPropertyOnBlockchain(
                     property.propertyId,
                     owners[0].walletAddress
                 );
-
             }
-
         } catch (err) {
-
             console.log("Blockchain Error:", err.message);
-
         }
 
         return successResponse(
@@ -93,22 +79,17 @@ const registerProperty = async (req, res) => {
         );
 
     } catch (error) {
-
         return errorResponse(
             res,
             error.message,
             500
         );
-
     }
-
 };
 
 // SEARCH PROPERTIES
 const searchProperties = async (req, res) => {
-
     try {
-
         const properties = await Property.find();
 
         return successResponse(
@@ -118,36 +99,27 @@ const searchProperties = async (req, res) => {
         );
 
     } catch (error) {
-
         return errorResponse(
             res,
             error.message,
             500
         );
-
     }
-
 };
 
 // GET BY ID
 const getPropertyById = async (req, res) => {
-
     try {
-
         const { propertyId } = req.params;
 
-        const property = await Property.findOne({
-            propertyId
-        });
+        const property = await Property.findOne({ propertyId });
 
         if (!property) {
-
             return errorResponse(
                 res,
                 "Property not found",
                 404
             );
-
         }
 
         return successResponse(
@@ -157,37 +129,28 @@ const getPropertyById = async (req, res) => {
         );
 
     } catch (error) {
-
         return errorResponse(
             res,
             error.message,
             500
         );
-
     }
-
 };
 
 // UPDATE STATUS
 const updatePropertyStatus = async (req, res) => {
-
     try {
-
         const { propertyId } = req.params;
         const { status } = req.body;
 
-        const property = await Property.findOne({
-            propertyId
-        });
+        const property = await Property.findOne({ propertyId });
 
         if (!property) {
-
             return errorResponse(
                 res,
                 "Property not found",
                 404
             );
-
         }
 
         property.status = status;
@@ -201,15 +164,12 @@ const updatePropertyStatus = async (req, res) => {
         );
 
     } catch (error) {
-
         return errorResponse(
             res,
             error.message,
             500
         );
-
     }
-
 };
 
 module.exports = {

@@ -1,121 +1,43 @@
-const fs = require("fs");
+const TronWeb = require("tronweb");
 
-let TronWeb;
-let tronWeb;
-let contract;
+const tronWeb = new TronWeb({
+    fullHost: process.env.TRON_FULL_HOST,
+    privateKey: process.env.PRIVATE_KEY
+});
 
-const initTron = async () => {
+const registerPropertyOnBlockchain = async (propertyId, ownerAddress) => {
 
-    if (tronWeb) {
+    try {
 
-        return tronWeb;
+        const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
 
+        return await contract.registerProperty(propertyId, ownerAddress).send({
+            feeLimit: 100000000
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        throw error;
     }
-
-    TronWeb = (await import("tronweb")).default;
-
-    tronWeb = new TronWeb({
-
-        fullHost:
-
-            process.env.TRON_FULL_HOST ||
-
-            "https://nile.trongrid.io",
-
-        privateKey:
-
-            process.env.TRON_PRIVATE_KEY
-
-    });
-
-    return tronWeb;
-
 };
 
-const loadContract = async () => {
+const transferOwnershipOnBlockchain = async (propertyId, from, to, share) => {
 
-    if (contract) {
+    try {
 
-        return contract;
+        const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
 
+        return await contract.transferOwnership(propertyId, from, to, share).send({
+            feeLimit: 100000000
+        });
+
+    } catch (error) {
+        console.log(error.message);
+        throw error;
     }
-
-    const tw = await initTron();
-
-    contract = await tw.contract().at(
-
-        process.env.CONTRACT_ADDRESS
-
-    );
-
-    return contract;
-
-};
-
-const registerPropertyOnBlockchain = async (
-
-    propertyId,
-
-    ownerWallet
-
-) => {
-
-    const c = await loadContract();
-
-    return await c
-
-        .registerProperty(
-
-            propertyId,
-
-            ownerWallet
-
-        )
-
-        .send();
-
-};
-
-const transferOwnershipOnBlockchain = async (
-
-    propertyId,
-
-    from,
-
-    to,
-
-    share
-
-) => {
-
-    const c = await loadContract();
-
-    return await c
-
-        .transferOwnership(
-
-            propertyId,
-
-            from,
-
-            to,
-
-            share
-
-        )
-
-        .send();
-
 };
 
 module.exports = {
-
-    initTron,
-
-    loadContract,
-
     registerPropertyOnBlockchain,
-
     transferOwnershipOnBlockchain
-
 };

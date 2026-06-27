@@ -20,7 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.18.2",
     "multer": "^2.2.0",
-    "tronweb": "^6.3.0",
+    "tronweb": "^5.3.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
