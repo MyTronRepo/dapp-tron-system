@@ -8,7 +8,9 @@ const {
 
     getDocumentsByProperty,
 
-    getDocumentById
+    getDocumentById,
+
+    verifyDocument
 
 } = require("../controllers/documentController");
 
@@ -25,6 +27,11 @@ router.get(
 router.get(
     "/:documentId",
     getDocumentById
+);
+
+router.put(
+    "/verify/:documentId",
+    verifyDocument
 );
 
 module.exports = router;

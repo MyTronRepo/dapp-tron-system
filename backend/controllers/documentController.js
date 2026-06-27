@@ -215,12 +215,73 @@ const getDocumentById = async (req, res) => {
 
 };
 
+const verifyDocument = async (req, res) => {
+
+    try {
+
+        const { documentId } = req.params;
+
+        const document =
+            await Document.findOne({
+
+                documentId
+
+            });
+
+        if (!document) {
+
+            return errorResponse(
+
+                res,
+
+                "Document not found",
+
+                404
+
+            );
+
+        }
+
+        document.verified = true;
+
+        await document.save();
+
+        return successResponse(
+
+            res,
+
+            document,
+
+            "Document verified successfully"
+
+        );
+
+    }
+
+    catch (error) {
+
+        return errorResponse(
+
+            res,
+
+            error.message,
+
+            500
+
+        );
+
+    }
+
+};
+
 module.exports = {
 
     registerDocument,
 
     getDocumentsByProperty,
 
-    getDocumentById
+    getDocumentById,
+
+    verifyDocument
 
 };
