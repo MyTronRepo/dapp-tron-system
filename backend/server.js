@@ -16,6 +16,9 @@ app.use(express.json());
 
 // Routes
 
+const authRoutes =
+    require("./routes/authRoutes");
+
 const propertyRoutes =
     require("./routes/propertyRoutes");
 
@@ -26,6 +29,11 @@ const transferRoutes =
     require("./routes/transferRoutes");
 
 // Route Registration
+
+app.use(
+    "/api/auth",
+    authRoutes
+);
 
 app.use(
     "/api/properties",
