@@ -5,39 +5,85 @@ const tronWeb = new TronWeb({
     privateKey: process.env.PRIVATE_KEY
 });
 
-const registerPropertyOnBlockchain = async (propertyId, ownerAddress) => {
-
+// REGISTER PROPERTY (FIXED FOR REAL ESTATE CONTRACT)
+const registerPropertyOnBlockchain = async (propertyId, documentHash = "0x00") => {
     try {
-
         const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
 
-        return await contract.registerProperty(propertyId, ownerAddress).send({
-            feeLimit: 100000000
-        });
+        const tx = await contract
+            .registerProperty(propertyId, documentHash)
+            .send({
+                feeLimit: 100000000
+            });
+
+        return tx;
 
     } catch (error) {
-        console.log(error.message);
+        console.log("Register Error:", error.message);
         throw error;
     }
 };
 
-const transferOwnershipOnBlockchain = async (propertyId, from, to, share) => {
-
+// UPDATE DOCUMENT
+const updateDocumentOnBlockchain = async (propertyId, documentHash) => {
     try {
-
         const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
 
-        return await contract.transferOwnership(propertyId, from, to, share).send({
-            feeLimit: 100000000
-        });
+        const tx = await contract
+            .updateDocument(propertyId, documentHash)
+            .send({
+                feeLimit: 100000000
+            });
+
+        return tx;
 
     } catch (error) {
-        console.log(error.message);
+        console.log("Update Error:", error.message);
+        throw error;
+    }
+};
+
+// CREATE TRANSFER
+const createTransferOnBlockchain = async (transferId, propertyId, to, share) => {
+    try {
+        const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
+
+        const tx = await contract
+            .createTransfer(transferId, propertyId, to, share)
+            .send({
+                feeLimit: 100000000
+            });
+
+        return tx;
+
+    } catch (error) {
+        console.log("Transfer Error:", error.message);
+        throw error;
+    }
+};
+
+// APPROVE TRANSFER
+const approveTransferOnBlockchain = async (transferId) => {
+    try {
+        const contract = await tronWeb.contract().at(process.env.CONTRACT_ADDRESS);
+
+        const tx = await contract
+            .approveTransfer(transferId)
+            .send({
+                feeLimit: 100000000
+            });
+
+        return tx;
+
+    } catch (error) {
+        console.log("Approve Error:", error.message);
         throw error;
     }
 };
 
 module.exports = {
     registerPropertyOnBlockchain,
-    transferOwnershipOnBlockchain
+    updateDocumentOnBlockchain,
+    createTransferOnBlockchain,
+    approveTransferOnBlockchain
 };
