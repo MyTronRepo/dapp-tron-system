@@ -22,6 +22,7 @@ const {
 
 const fs = require("fs");
 
+// REGISTER
 const registerDocument = async (req, res) => {
 
     try {
@@ -127,18 +128,34 @@ const registerDocument = async (req, res) => {
 
 };
 
+// SEARCH DOCUMENTS
 const getDocumentsByProperty = async (req, res) => {
 
     try {
 
-        const { propertyId } = req.params;
+        const {
+
+            propertyId,
+
+            verified,
+
+            documentType
+
+        } = req.query;
+
+        const query = {};
+
+        if (propertyId)
+            query.propertyId = propertyId;
+
+        if (documentType)
+            query.documentType = documentType;
+
+        if (verified !== undefined)
+            query.verified = verified === "true";
 
         const documents =
-            await Document.find({
-
-                propertyId
-
-            });
+            await Document.find(query);
 
         return successResponse(
 
@@ -168,6 +185,7 @@ const getDocumentsByProperty = async (req, res) => {
 
 };
 
+// GET DOCUMENT
 const getDocumentById = async (req, res) => {
 
     try {
@@ -223,6 +241,7 @@ const getDocumentById = async (req, res) => {
 
 };
 
+// VERIFY
 const verifyDocument = async (req, res) => {
 
     try {
@@ -282,6 +301,7 @@ const verifyDocument = async (req, res) => {
 
 };
 
+// UPLOAD
 const uploadDocument = async (req, res) => {
 
     try {
