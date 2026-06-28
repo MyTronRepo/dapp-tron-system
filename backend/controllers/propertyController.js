@@ -21,6 +21,7 @@ const healthCheck = async (req, res) => {
 
 // REGISTER PROPERTY
 const registerProperty = async (req, res) => {
+
     try {
 
         const {
@@ -38,11 +39,45 @@ const registerProperty = async (req, res) => {
         } = req.body;
 
         if (!owners || !Array.isArray(owners) || owners.length === 0) {
+
             return errorResponse(
                 res,
                 "Owners are required",
                 400
             );
+
+        }
+
+        const totalShare =
+            owners.reduce(
+                (sum, owner) =>
+                    sum + Number(owner.share),
+                0
+            );
+
+        if (totalShare !== 100) {
+
+            return errorResponse(
+                res,
+                "Total ownership share must equal 100 percent",
+                400
+            );
+
+        }
+
+        const existingProperty =
+            await Property.findOne({
+                parcelNumber
+            });
+
+        if (existingProperty) {
+
+            return errorResponse(
+                res,
+                "Property already exists",
+                409
+            );
+
         }
 
         const property = await Property.create({
@@ -71,10 +106,13 @@ const registerProperty = async (req, res) => {
 
             if (owners?.[0]?.walletAddress) {
 
-                await registerPropertyOnBlockchain(
-                    property.propertyId,
-                    owners[0].walletAddress
-                );
+                const txId =
+                    await registerPropertyOnBlockchain(
+                        property.propertyId,
+                        owners[0].walletAddress
+                    );
+
+                console.log("Blockchain TX:", txId);
 
             }
 
