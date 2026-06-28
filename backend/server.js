@@ -18,12 +18,14 @@ const authRoutes = require("./routes/authRoutes");
 const propertyRoutes = require("./routes/propertyRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const transferRoutes = require("./routes/transferRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 // Route Registration
 app.use("/api/auth", authRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/transfers", transferRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Root Route
 app.get("/", (req, res) => {
