@@ -3,28 +3,86 @@ const express = require("express");
 const router = express.Router();
 
 const {
+
     healthCheck,
+
     registerProperty,
+
     searchProperties,
+
     getPropertyById,
+
     updatePropertyStatus
+
 } = require("../controllers/propertyController");
 
-const { authenticate } = require("../middleware/authMiddleware");
+const {
+
+    authenticate
+
+} = require("../middleware/authMiddleware");
+
+const validate =
+    require("../middleware/validationMiddleware");
+
+const {
+
+    propertyRegisterValidation
+
+} = require("../validators/propertyValidator");
 
 // HEALTH
-router.get("/health", healthCheck);
+router.get(
+    "/health",
+    healthCheck
+);
 
-// REGISTER (protected)
-router.post("/register", authenticate, registerProperty);
+// REGISTER
+router.post(
 
-// SEARCH (protected)
-router.get("/search", authenticate, searchProperties);
+    "/register",
 
-// GET BY ID (protected)
-router.get("/:propertyId", authenticate, getPropertyById);
+    authenticate,
 
-// UPDATE STATUS (protected)
-router.patch("/:propertyId/status", authenticate, updatePropertyStatus);
+    propertyRegisterValidation,
+
+    validate,
+
+    registerProperty
+
+);
+
+// SEARCH
+router.get(
+
+    "/search",
+
+    authenticate,
+
+    searchProperties
+
+);
+
+// GET PROPERTY
+router.get(
+
+    "/:propertyId",
+
+    authenticate,
+
+    getPropertyById
+
+);
+
+// UPDATE STATUS
+router.patch(
+
+    "/:propertyId/status",
+
+    authenticate,
+
+    updatePropertyStatus
+
+);
 
 module.exports = router;
