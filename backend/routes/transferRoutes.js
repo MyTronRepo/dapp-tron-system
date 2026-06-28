@@ -30,11 +30,7 @@ router.post(
 
     authenticate,
 
-    authorize(
-
-        "Owner"
-
-    ),
+    authorize("owner"),
 
     createTransferRequest
 
@@ -66,11 +62,7 @@ router.patch(
 
     authenticate,
 
-    authorize(
-
-        "Buyer"
-
-    ),
+    authorize("buyer"),
 
     approveTransferByBuyer
 
@@ -82,11 +74,7 @@ router.patch(
 
     authenticate,
 
-    authorize(
-
-        "Admin"
-
-    ),
+    authorize("admin"),
 
     approveTransferByAdmin
 
