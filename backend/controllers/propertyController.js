@@ -15,6 +15,18 @@ const {
     createAuditLog
 } = require("../utils/auditLogger");
 
+const {
+
+    isValidTronAddress,
+
+    isValidLatitude,
+
+    isValidLongitude,
+
+    isValidBuildYear
+
+} = require("../utils/validators");
+
 // HEALTH CHECK
 const healthCheck = async (req, res) => {
     return res.json({
@@ -51,6 +63,60 @@ const registerProperty = async (req, res) => {
             );
 
         }
+
+        if (!isValidBuildYear(buildYear)) {
+
+    return errorResponse(
+        res,
+        "Invalid build year",
+        400
+    );
+
+}
+
+if (!isValidLatitude(Number(latitude))) {
+
+    return errorResponse(
+        res,
+        "Invalid latitude",
+        400
+    );
+
+}
+
+if (!isValidLongitude(Number(longitude))) {
+
+    return errorResponse(
+        res,
+        "Invalid longitude",
+        400
+    );
+
+}
+
+for (const owner of owners) {
+
+    if (!isValidTronAddress(owner.walletAddress)) {
+
+        return errorResponse(
+            res,
+            `Invalid wallet address: ${owner.walletAddress}`,
+            400
+        );
+
+    }
+
+    if (owner.share <= 0) {
+
+        return errorResponse(
+            res,
+            "Owner share must be greater than zero",
+            400
+        );
+
+    }
+
+}
 
         const totalShare =
             owners.reduce(

@@ -26,6 +26,8 @@ const {
     createAuditLog
 } = require("../utils/auditLogger");
 
+const path = require("path");
+
 // REGISTER
 const registerDocument = async (req, res) => {
 
@@ -381,6 +383,53 @@ const uploadDocument = async (req, res) => {
 
         }
 
+        const allowedExtensions = [
+
+    ".pdf",
+
+    ".jpg",
+
+    ".jpeg",
+
+    ".png"
+
+];
+
+const extension = path.extname(req.file.originalname).toLowerCase();
+
+if (!allowedExtensions.includes(extension)) {
+
+    fs.unlinkSync(req.file.path);
+
+    return errorResponse(
+
+        res,
+
+        "Unsupported file type",
+
+        400
+
+    );
+
+}
+
+const maxFileSize = 10 * 1024 * 1024;
+
+if (req.file.size > maxFileSize) {
+
+    fs.unlinkSync(req.file.path);
+
+    return errorResponse(
+
+        res,
+
+        "File size exceeds 10MB",
+
+        400
+
+    );
+
+}
         const cid =
             await uploadToIPFS(
 

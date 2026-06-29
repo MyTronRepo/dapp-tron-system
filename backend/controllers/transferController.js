@@ -122,6 +122,42 @@ const createTransferRequest = async (
 
         }
 
+        const existingTransfer = await Transfer.findOne({
+
+    propertyId,
+
+    seller,
+
+    buyer,
+
+    status: {
+
+        $in: [
+
+            "PendingBuyer",
+
+            "PendingAdmin"
+
+        ]
+
+    }
+
+});
+
+if (existingTransfer) {
+
+    return errorResponse(
+
+        res,
+
+        "There is already an active transfer request between these users",
+
+        409
+
+    );
+
+}
+
         const transfer =
             await Transfer.create({
 
