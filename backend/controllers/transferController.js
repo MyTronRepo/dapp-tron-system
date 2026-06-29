@@ -11,6 +11,10 @@ const {
     errorResponse
 } = require("../utils/responseHandler");
 
+const {
+    createAuditLog
+} = require("../utils/auditLogger");
+
 const createTransferRequest = async (
     req,
     res
@@ -148,6 +152,32 @@ const createTransferRequest = async (
                 status: "PendingBuyer"
 
             });
+
+            await createAuditLog({
+
+    action: "CREATE_TRANSFER_REQUEST",
+
+    entity: "Transfer",
+
+    entityId: transfer.transferId,
+
+    performedBy: seller,
+
+    role: "Owner",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        propertyId,
+
+        buyer,
+
+        transferredShare
+
+    }
+
+});
 
         return successResponse(
             res,
@@ -319,6 +349,29 @@ const approveTransferByBuyer = async (
             "PendingAdmin";
 
         await transfer.save();
+
+        await createAuditLog({
+
+    action: "BUYER_APPROVED_TRANSFER",
+
+    entity: "Transfer",
+
+    entityId: transfer.transferId,
+
+    performedBy: transfer.buyer,
+
+    role: "Buyer",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        propertyId:
+            transfer.propertyId
+
+    }
+
+});
 
         return successResponse(
             res,
@@ -492,6 +545,40 @@ const approveTransferByAdmin = async (
         }
 
         await property.save();
+
+        await createAuditLog({
+
+    action: "ADMIN_APPROVED_TRANSFER",
+
+    entity: "Transfer",
+
+    entityId: transfer.transferId,
+
+    performedBy:
+        req.user?.walletAddress || "Admin",
+
+    role:
+        req.user?.role || "Admin",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        propertyId:
+            transfer.propertyId,
+
+        seller:
+            transfer.seller,
+
+        buyer:
+            transfer.buyer,
+
+        transferredShare:
+            transfer.transferredShare
+
+    }
+
+});
 
         transfer.adminApproved = true;
 

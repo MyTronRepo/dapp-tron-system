@@ -2,7 +2,23 @@ const mongoose = require("mongoose");
 
 const auditLogSchema = new mongoose.Schema({
 
+    logId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+
     action: {
+        type: String,
+        required: true
+    },
+
+    entity: {
+        type: String,
+        required: true
+    },
+
+    entityId: {
         type: String,
         required: true
     },
@@ -12,19 +28,19 @@ const auditLogSchema = new mongoose.Schema({
         required: true
     },
 
-    targetId: {
+    role: {
         type: String,
         default: ""
     },
 
-    targetType: {
+    ipAddress: {
         type: String,
         default: ""
     },
 
-    description: {
-        type: String,
-        default: ""
+    details: {
+        type: Object,
+        default: {}
     }
 
 }, {

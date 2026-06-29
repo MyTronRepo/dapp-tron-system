@@ -22,6 +22,10 @@ const {
 
 const fs = require("fs");
 
+const {
+    createAuditLog
+} = require("../utils/auditLogger");
+
 // REGISTER
 const registerDocument = async (req, res) => {
 
@@ -99,6 +103,32 @@ const registerDocument = async (req, res) => {
                 uploadedBy
 
             });
+
+            await createAuditLog({
+
+    action: "REGISTER_DOCUMENT",
+
+    entity: "Document",
+
+    entityId: document.documentId,
+
+    performedBy: uploadedBy,
+
+    role: "Owner",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        propertyId,
+
+        documentName,
+
+        documentType
+
+    }
+
+});
 
         return successResponse(
 
@@ -361,6 +391,56 @@ const uploadDocument = async (req, res) => {
         document.documentURI = cid;
 
         await document.save();
+
+        await createAuditLog({
+
+    action: "UPLOAD_DOCUMENT",
+
+    entity: "Document",
+
+    entityId: document.documentId,
+
+    performedBy:
+        req.user?.walletAddress || "Owner",
+
+    role:
+        req.user?.role || "Owner",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        documentURI:
+            document.documentURI
+
+    }
+
+});
+
+        await createAuditLog({
+
+    action: "VERIFY_DOCUMENT",
+
+    entity: "Document",
+
+    entityId: document.documentId,
+
+    performedBy:
+        req.user?.walletAddress || "Admin",
+
+    role:
+        req.user?.role || "Admin",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        propertyId:
+            document.propertyId
+
+    }
+
+});
 
         fs.unlinkSync(
 

@@ -30,6 +30,7 @@ const documentRoutes = require("./routes/documentRoutes");
 const transferRoutes = require("./routes/transferRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const logRoutes = require("./routes/logRoutes");
+const auditRoutes = require("./routes/auditRoutes");
 
 // =========================
 // Route Registration
@@ -45,6 +46,8 @@ app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 app.use("/api/logs", logRoutes);
+
+app.use("/api/audit", auditRoutes);
 
 // =========================
 // Root Route

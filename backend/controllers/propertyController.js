@@ -11,6 +11,10 @@ const {
     registerPropertyOnBlockchain
 } = require("../services/tronService");
 
+const {
+    createAuditLog
+} = require("../utils/auditLogger");
+
 // HEALTH CHECK
 const healthCheck = async (req, res) => {
     return res.json({
@@ -195,6 +199,43 @@ return successResponse(
     "Properties fetched successfully"
 );
 
+await createAuditLog({
+
+    action: "REGISTER_PROPERTY",
+
+    entity: "Property",
+
+    entityId: property.propertyId,
+
+    performedBy:
+        owners[0].walletAddress,
+
+    role: "Owner",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        parcelNumber,
+
+        city,
+
+        province
+
+    }
+
+});
+
+return successResponse(
+
+    res,
+
+    property,
+
+    "Property registered successfully"
+
+);
+
     }
 
     catch (error) {
@@ -294,6 +335,30 @@ if (!allowedStatus.includes(status)) {
         property.status = status;
 
         await property.save();
+
+        await createAuditLog({
+
+    action: "UPDATE_PROPERTY_STATUS",
+
+    entity: "Property",
+
+    entityId: property.propertyId,
+
+    performedBy:
+        req.user?.walletAddress || "System",
+
+    role:
+        req.user?.role || "System",
+
+    ipAddress: req.ip,
+
+    details: {
+
+        status
+
+    }
+
+});
 
         return successResponse(
             res,
