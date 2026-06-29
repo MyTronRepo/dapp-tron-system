@@ -5,6 +5,8 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 
 const connectDatabase = require("./config/database");
 
@@ -73,7 +75,7 @@ app.use("/api/transfers", transferRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/logs", logRoutes);
 app.use("/api/audit", auditRoutes);
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // =========================
 // Root Route
