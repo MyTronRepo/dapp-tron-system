@@ -1,72 +1,91 @@
 const mongoose = require("mongoose");
 
-const ownerSchema =
-    new mongoose.Schema({
 
-        walletAddress: {
-            type: String,
-            required: true
-        },
+const propertySchema = new mongoose.Schema(
+{
+    propertyId: {
+        type: String,
+        required: true,
+        unique: true
+    },
 
-        nationalIdHash: {
-            type: String,
-            required: true
-        },
+    province: {
+        type: String,
+        required: true
+    },
 
-        share: {
-            type: Number,
-            required: true
-        }
+    city: {
+        type: String,
+        required: true
+    },
 
-    });
+    district: {
+        type: String,
+        required: true
+    },
 
-const propertySchema =
-    new mongoose.Schema({
+    parcelNumber: {
+        type: String,
+        required: true,
+        unique: true
+    },
 
-        propertyId: {
-            type: String,
-            required: true,
-            unique: true
-        },
+    area: {
+        type: Number,
+        required: true
+    },
 
-        province: String,
+    buildYear: {
+        type: Number,
+        required: true
+    },
 
-        city: String,
+    usageType: {
+        type: String,
+        required: true
+    },
 
-        district: String,
+    constructionStatus: {
+        type: String,
+        required: true
+    },
 
-        parcelNumber: String,
+    latitude: {
+        type: Number
+    },
 
-        area: Number,
+    longitude: {
+        type: Number
+    },
 
-        buildYear: Number,
+    createdBy: {
+        type: String,
+        required: true
+    },
 
-        usageType: String,
+    status: {
+        type: String,
+        enum: [
+            "Pending",
+            "Verified",
+            "Rejected",
+            "Suspended"
+        ],
+        default: "Pending"
+    },
 
-        constructionStatus: String,
+    exists: {
+        type: Boolean,
+        default: true
+    }
 
-        latitude: Number,
+},
+{
+    timestamps: true
+});
 
-        longitude: Number,
 
-        owners: [ownerSchema],
-
-        status: {
-            type: String,
-            default: "Pending"
-        },
-
-        exists: {
-            type: Boolean,
-            default: true
-        }
-
-    }, {
-        timestamps: true
-    });
-
-module.exports =
-    mongoose.model(
-        "Property",
-        propertySchema
-    );
+module.exports = mongoose.model(
+    "Property",
+    propertySchema
+);

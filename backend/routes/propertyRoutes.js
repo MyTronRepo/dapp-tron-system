@@ -4,8 +4,6 @@ const router = express.Router();
 
 const {
 
-    healthCheck,
-
     registerProperty,
 
     searchProperties,
@@ -16,43 +14,44 @@ const {
 
 } = require("../controllers/propertyController");
 
+
 const {
-
-    authenticate
-
+    authenticate,
+    authorize
 } = require("../middleware/authMiddleware");
+
 
 const validate =
     require("../middleware/validationMiddleware");
 
+
 const {
-
     propertyRegisterValidation
-
 } = require("../../validators/propertyValidator");
 
-// HEALTH
-router.get(
-    "/health",
-    healthCheck
-);
 
-// REGISTER
+
+// REGISTER PROPERTY
 router.post(
-
     "/register",
 
     authenticate,
+
+    authorize(
+        "owner"
+    ),
 
     propertyRegisterValidation,
 
     validate,
 
     registerProperty
-
 );
 
-// SEARCH
+
+
+// SEARCH PROPERTY
+
 router.get(
 
     "/search",
@@ -63,7 +62,10 @@ router.get(
 
 );
 
+
+
 // GET PROPERTY
+
 router.get(
 
     "/:propertyId",
@@ -74,15 +76,23 @@ router.get(
 
 );
 
-// UPDATE STATUS
+
+
+// VERIFY / REJECT PROPERTY
+
 router.patch(
 
     "/:propertyId/status",
 
     authenticate,
 
+    authorize(
+        "admin"
+    ),
+
     updatePropertyStatus
 
 );
+
 
 module.exports = router;
