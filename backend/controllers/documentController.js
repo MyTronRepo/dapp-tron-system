@@ -1,100 +1,79 @@
 const { v4: uuidv4 } = require("uuid");
 
-const Document =
-    require("../models/Document");
-
-const Property =
-    require("../models/Property");
+const Document = require("../models/Document");
+const Property = require("../models/Property");
 
 const {
-
     successResponse,
-
     errorResponse
-
 } = require("../utils/responseHandler");
 
 const {
-
     uploadToIPFS
-
 } = require("../services/ipfsService");
 
+const {
+    generateFileHash
+} = require("../utils/fileHash");
+
 const fs = require("fs");
+const path = require("path");
 
 const {
     createAuditLog
 } = require("../utils/auditLogger");
 
-const path = require("path");
 
-// REGISTER
+// REGISTER DOCUMENT
 const registerDocument = async (req, res) => {
 
     try {
 
         const {
-
             propertyId,
-
             documentName,
-
             documentType,
-
             uploadedBy
-
         } = req.body;
 
+
         if (
-
             !propertyId ||
-
             !documentName ||
-
             !documentType ||
-
             !uploadedBy
-
         ) {
 
             return errorResponse(
-
                 res,
-
                 "Required fields are missing",
-
                 400
-
             );
 
         }
 
+
         const property =
             await Property.findOne({
-
                 propertyId
-
             });
+
 
         if (!property) {
 
             return errorResponse(
-
                 res,
-
                 "Property not found",
-
                 404
-
             );
 
         }
 
+
         const document =
             await Document.create({
 
-                documentId:
-                    uuidv4(),
+                documentId: uuidv4(),
 
                 propertyId,
 
@@ -106,90 +85,83 @@ const registerDocument = async (req, res) => {
 
             });
 
-            await createAuditLog({
 
-    action: "REGISTER_DOCUMENT",
+        await createAuditLog({
 
-    entity: "Document",
+            action: "REGISTER_DOCUMENT",
 
-    entityId: document.documentId,
+            entity: "Document",
 
-    performedBy: uploadedBy,
+            entityId: document.documentId,
 
-    role: "Owner",
+            performedBy: uploadedBy,
 
-    ipAddress: req.ip,
+            role: "Owner",
 
-    details: {
+            ipAddress: req.ip,
 
-        propertyId,
+            details: {
+                propertyId,
+                documentName,
+                documentType
+            }
 
-        documentName,
+        });
 
-        documentType
-
-    }
-
-});
 
         return successResponse(
-
             res,
-
             document,
-
             "Document registered successfully"
-
         );
 
-    }
 
+    }
     catch (error) {
 
         return errorResponse(
-
             res,
-
             error.message,
-
             500
-
         );
 
     }
 
 };
 
-// SEARCH DOCUMENTS
+
+
+// GET DOCUMENTS
 const getDocumentsByProperty = async (req, res) => {
 
     try {
 
         const {
-
             propertyId,
-
             verified,
-
             documentType,
-
             uploadedBy
-
         } = req.query;
 
+
         const query = {};
+
 
         if (propertyId)
             query.propertyId = propertyId;
 
+
         if (documentType)
             query.documentType = documentType;
+
 
         if (uploadedBy)
             query.uploadedBy = uploadedBy;
 
+
         if (verified !== undefined)
             query.verified = verified === "true";
+
 
         const documents =
             await Document.find(query)
@@ -197,333 +169,309 @@ const getDocumentsByProperty = async (req, res) => {
                     createdAt: -1
                 });
 
+
         return successResponse(
-
             res,
-
             documents,
-
             "Documents fetched successfully"
-
         );
 
-    }
 
-    catch (error) {
+    }
+    catch(error){
 
         return errorResponse(
-
             res,
-
             error.message,
-
             500
-
         );
 
     }
 
 };
 
-// GET DOCUMENT
-const getDocumentById = async (req, res) => {
+
+
+// GET DOCUMENT BY ID
+const getDocumentById = async (req,res)=>{
 
     try {
 
-        const { documentId } = req.params;
+        const {
+            documentId
+        } = req.params;
+
 
         const document =
             await Document.findOne({
-
                 documentId
-
             });
 
-        if (!document) {
+
+        if(!document){
 
             return errorResponse(
-
                 res,
-
                 "Document not found",
-
                 404
-
             );
 
         }
+
 
         return successResponse(
-
             res,
-
             document,
-
             "Document fetched successfully"
-
         );
 
-    }
 
-    catch (error) {
+    }
+    catch(error){
 
         return errorResponse(
-
             res,
-
             error.message,
-
             500
-
         );
 
     }
 
 };
 
-// VERIFY
-const verifyDocument = async (req, res) => {
 
-    try {
 
-        const { documentId } = req.params;
+// VERIFY DOCUMENT
+const verifyDocument = async(req,res)=>{
+
+    try{
+
+        const {
+            documentId
+        } = req.params;
+
 
         const document =
             await Document.findOne({
-
                 documentId
-
             });
 
-        if (!document) {
+
+        if(!document){
 
             return errorResponse(
-
                 res,
-
                 "Document not found",
-
                 404
-
             );
 
         }
+
 
         document.verified = true;
 
         await document.save();
 
+
+        await createAuditLog({
+
+            action:"VERIFY_DOCUMENT",
+
+            entity:"Document",
+
+            entityId:document.documentId,
+
+            performedBy:
+                req.user?.walletAddress || "Admin",
+
+            role:
+                req.user?.role || "Admin",
+
+            ipAddress:req.ip,
+
+            details:{
+                propertyId:document.propertyId
+            }
+
+        });
+
+
         return successResponse(
-
             res,
-
             document,
-
             "Document verified successfully"
-
         );
 
-    }
 
-    catch (error) {
+    }
+    catch(error){
 
         return errorResponse(
-
             res,
-
             error.message,
-
             500
-
         );
 
     }
 
 };
 
-// UPLOAD
-const uploadDocument = async (req, res) => {
 
-    try {
 
-        const { documentId } = req.params;
+// UPLOAD DOCUMENT
+const uploadDocument = async(req,res)=>{
+
+    try{
+
+
+        const {
+            documentId
+        } = req.params;
+
 
         const document =
             await Document.findOne({
-
                 documentId
-
             });
 
-        if (!document) {
+
+        if(!document){
 
             return errorResponse(
-
                 res,
-
                 "Document not found",
-
                 404
-
             );
 
         }
 
-        if (!req.file) {
+
+        if(!req.file){
 
             return errorResponse(
-
                 res,
-
                 "No file uploaded",
-
                 400
-
             );
 
         }
+
 
         const allowedExtensions = [
+            ".pdf",
+            ".jpg",
+            ".jpeg",
+            ".png"
+        ];
 
-    ".pdf",
 
-    ".jpg",
+        const extension =
+            path.extname(
+                req.file.originalname
+            ).toLowerCase();
 
-    ".jpeg",
 
-    ".png"
+        if(!allowedExtensions.includes(extension)){
 
-];
+            fs.unlinkSync(req.file.path);
 
-const extension = path.extname(req.file.originalname).toLowerCase();
-
-if (!allowedExtensions.includes(extension)) {
-
-    fs.unlinkSync(req.file.path);
-
-    return errorResponse(
-
-        res,
-
-        "Unsupported file type",
-
-        400
-
-    );
-
-}
-
-const maxFileSize = 10 * 1024 * 1024;
-
-if (req.file.size > maxFileSize) {
-
-    fs.unlinkSync(req.file.path);
-
-    return errorResponse(
-
-        res,
-
-        "File size exceeds 10MB",
-
-        400
-
-    );
-
-}
-        const cid =
-            await uploadToIPFS(
-
-                req.file.path
-
+            return errorResponse(
+                res,
+                "Unsupported file type",
+                400
             );
 
-        document.documentURI = cid;
+        }
+
+
+        const maxFileSize =
+            10 * 1024 * 1024;
+
+
+        if(req.file.size > maxFileSize){
+
+            fs.unlinkSync(req.file.path);
+
+            return errorResponse(
+                res,
+                "File size exceeds 10MB",
+                400
+            );
+
+        }
+
+
+       const hash =
+    generateFileHash(
+        req.file.path
+    );
+
+
+const ipfsResult =
+    await uploadToIPFS(
+        req.file.path
+    );
+
+
+document.documentHash = hash;
+
+document.documentURI = ipfsResult.cid;
+
 
         await document.save();
 
-        await createAuditLog({
 
-    action: "UPLOAD_DOCUMENT",
-
-    entity: "Document",
-
-    entityId: document.documentId,
-
-    performedBy:
-        req.user?.walletAddress || "Owner",
-
-    role:
-        req.user?.role || "Owner",
-
-    ipAddress: req.ip,
-
-    details: {
-
-        documentURI:
-            document.documentURI
-
-    }
-
-});
 
         await createAuditLog({
 
-    action: "VERIFY_DOCUMENT",
+            action:"UPLOAD_DOCUMENT",
 
-    entity: "Document",
+            entity:"Document",
 
-    entityId: document.documentId,
+            entityId:document.documentId,
 
-    performedBy:
-        req.user?.walletAddress || "Admin",
+            performedBy:
+                req.user?.walletAddress || "Owner",
 
-    role:
-        req.user?.role || "Admin",
+            role:
+                req.user?.role || "Owner",
 
-    ipAddress: req.ip,
+            ipAddress:req.ip,
 
-    details: {
+            details:{
+    documentURI: ipfsResult.cid,
+    documentHash: hash
+}
 
-        propertyId:
-            document.propertyId
+        });
 
-    }
-
-});
 
         fs.unlinkSync(
-
             req.file.path
-
         );
+
 
         return successResponse(
-
             res,
-
             document,
-
-            "File uploaded to IPFS successfully"
-
+            "File uploaded successfully"
         );
 
-    }
 
-    catch (error) {
+    }
+    catch(error){
 
         return errorResponse(
-
             res,
-
             error.message,
-
             500
-
         );
 
     }
 
 };
+
+
 
 module.exports = {
 

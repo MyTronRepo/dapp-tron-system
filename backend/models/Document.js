@@ -1,57 +1,92 @@
 const mongoose = require("mongoose");
 
-const documentSchema =
-    new mongoose.Schema({
+const documentSchema = new mongoose.Schema({
 
-        documentId: {
-            type: String,
-            required: true,
-            unique: true
-        },
+    documentId: {
+        type: String,
+        required: true,
+        unique: true
+    },
 
-        propertyId: {
-            type: String,
-            required: true
-        },
+    propertyId: {
+        type: String,
+        required: true
+    },
 
-        documentName: {
-            type: String,
-            required: true
-        },
+    documentName: {
+        type: String,
+        required: true
+    },
 
-        documentType: {
-            type: String,
-            required: true
-        },
+    documentType: {
+        type: String,
+        required: true
+    },
 
-        documentHash: {
-            type: String,
-            default: ""
-        },
+    // SHA256 hash of uploaded file
+    fileHash: {
+        type: String,
+        default: ""
+    },
 
-        documentURI: {
-            type: String,
-            default: ""
-        },
+    // IPFS CID
+    documentURI: {
+        type: String,
+        default: ""
+    },
 
-        uploadedBy: {
-            type: String,
-            required: true
-        },
+    uploadedBy: {
+        type: String,
+        required: true
+    },
 
-        verified: {
-            type: Boolean,
-            default: false
-        }
+    status: {
+        type: String,
+        enum: [
+            "Pending",
+            "Verified",
+            "Rejected",
+            "Revoked"
+        ],
+        default: "Pending"
+    },
 
-    }, {
+    version: {
+        type: Number,
+        default: 1
+    },
 
-        timestamps: true
+    replacedDocumentId: {
+        type: String,
+        default: ""
+    },
 
-    });
+    verifiedBy: {
+        type: String,
+        default: ""
+    },
 
-module.exports =
-    mongoose.model(
-        "Document",
-        documentSchema
-    );
+    verifiedAt: {
+        type: Date,
+        default: null
+    },
+
+    revokedBy: {
+        type: String,
+        default: ""
+    },
+
+    revokedAt: {
+        type: Date,
+        default: null
+    }
+
+}, {
+    timestamps: true
+});
+
+
+module.exports = mongoose.model(
+    "Document",
+    documentSchema
+);
