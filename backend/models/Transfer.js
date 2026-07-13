@@ -1,75 +1,94 @@
 const mongoose = require("mongoose");
 
+
 const transferSchema =
-    new mongoose.Schema({
+new mongoose.Schema({
 
-        transferId: {
-            type: String,
-            required: true,
-            unique: true
-        },
+    transferId:{
+        type:String,
+        required:true,
+        unique:true
+    },
 
-        propertyId: {
-            type: String,
-            required: true
-        },
 
-        seller: {
-            type: String,
-            required: true
-        },
+    propertyId:{
+        type:String,
+        required:true
+    },
 
-        buyer: {
-            type: String,
-            required: true
-        },
 
-        transferredShare: {
-            type: Number,
-            required: true
-        },
+    seller:{
+        type:String,
+        required:true
+    },
 
-        buyerApproved: {
-            type: Boolean,
-            default: false
-        },
 
-        adminApproved: {
-        type: Boolean,
-        default: false
-        },
+    buyer:{
+        type:String,
+        required:true
+    },
 
-        blockchainTxId: {
-        type: String,
-        default: ""
-        },
 
-        completed: {
-        type: Boolean,
-        default: false
-        },
+    transferredShare:{
+        type:Number,
+        required:true,
+        min:1,
+        max:100
+    },
 
-        timestamp: {
-            type: Number,
-            required: true
-        },
 
-        expireAt: {
-            type: Number,
-            required: true
-        },
+    buyerApproved:{
+        type:Boolean,
+        default:false
+    },
 
-        status: {
-            type: String,
-            default: "PendingBuyer"
-        }
 
-    }, {
-        timestamps: true
-    });
+    adminApproved:{
+        type:Boolean,
+        default:false
+    },
+
+
+    blockchainTxId:{
+        type:String,
+        default:""
+    },
+
+
+    completed:{
+        type:Boolean,
+        default:false
+    },
+
+
+    expireAt:{
+        type:Number,
+        required:true
+    },
+
+
+    status:{
+        type:String,
+        enum:[
+            "PendingSeller",
+            "PendingBuyer",
+            "PendingAdmin",
+            "Completed",
+            "Rejected",
+            "Expired"
+        ],
+        default:"PendingBuyer"
+    }
+
+
+},
+{
+    timestamps:true
+});
+
 
 module.exports =
-    mongoose.model(
-        "Transfer",
-        transferSchema
-    );
+mongoose.model(
+    "Transfer",
+    transferSchema
+);

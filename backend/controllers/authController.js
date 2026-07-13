@@ -48,7 +48,7 @@ const registerUser = async (req, res) => {
             fullName,
 
             // role is controlled by backend
-            role: "owner"
+            role: req.body.role || "owner"
 
         });
 

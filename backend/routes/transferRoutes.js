@@ -39,7 +39,7 @@ router.post(
 
     authenticate,
 
-    authorize("Owner"),
+    authorize("owner"),
 
     transferCreateValidation,
 
@@ -75,7 +75,7 @@ router.patch(
 
     authenticate,
 
-    authorize("Buyer"),
+    authorize("buyer"),
 
     approveTransferByBuyer
 
@@ -87,7 +87,7 @@ router.patch(
 
     authenticate,
 
-    authorize("Admin"),
+    authorize("admin"),
 
     approveTransferByAdmin
 
