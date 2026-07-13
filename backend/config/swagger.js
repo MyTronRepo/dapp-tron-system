@@ -1,5 +1,6 @@
 const swaggerJSDoc = require("swagger-jsdoc");
 
+
 const swaggerDefinition = {
 
     openapi: "3.0.0",
@@ -10,9 +11,11 @@ const swaggerDefinition = {
 
         version: "1.0.0",
 
-        description: "Backend API for decentralized real estate system using TRON blockchain"
+        description:
+            "Backend API for decentralized real estate system using TRON blockchain"
 
     },
+
 
     servers: [
 
@@ -28,14 +31,24 @@ const swaggerDefinition = {
 
 };
 
+
+
 const options = {
 
     swaggerDefinition,
 
-    apis: ["./routes/*.js"]
+
+    apis: [
+
+        "./backend/routes/*.js"
+
+    ]
 
 };
 
+
+
 const swaggerSpec = swaggerJSDoc(options);
+
 
 module.exports = swaggerSpec;

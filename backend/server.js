@@ -1,11 +1,9 @@
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
 const swaggerUi = require("swagger-ui-express");
+const dotenv = require("dotenv");
 
 const swaggerSpec = require("./config/swagger");
 const connectDatabase = require("./config/database");
@@ -52,15 +50,6 @@ app.use(
         extended: true
     })
 );
-
-
-// =========================
-// Data Sanitization
-// =========================
-
-app.use(mongoSanitize());
-
-app.use(xss());
 
 
 // =========================
