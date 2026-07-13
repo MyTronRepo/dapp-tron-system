@@ -31,7 +31,7 @@ const {
 
     transferCreateValidation
 
-} = require("../validators/transferValidator");
+} = require("../../validators/transferValidator");
 
 router.post(
 

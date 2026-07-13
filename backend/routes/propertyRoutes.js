@@ -29,7 +29,7 @@ const {
 
     propertyRegisterValidation
 
-} = require("../validators/propertyValidator");
+} = require("../../validators/propertyValidator");
 
 // HEALTH
 router.get(

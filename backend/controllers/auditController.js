@@ -91,7 +91,7 @@ const searchLogs = async (req, res) => {
 
 module.exports = {
 
-    getAllLogs,
+    getAuditLogs: getAllLogs,
 
     searchLogs
 

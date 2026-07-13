@@ -12,7 +12,7 @@ const {
 
     documentRegisterValidation
 
-} = require("../validators/documentValidator");
+} = require("../../validators/documentValidator");
 
 const {
 

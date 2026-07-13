@@ -19,7 +19,7 @@ const {
 
     loginValidation
 
-} = require("../validators/authValidator");
+} = require("../../validators/authValidator");
 
 router.post(
 
