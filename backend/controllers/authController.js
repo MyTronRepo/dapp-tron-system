@@ -41,16 +41,15 @@ const registerUser = async (req, res) => {
 
         const user = await User.create({
 
-            walletAddress,
+walletAddress,
 
-            nationalIdHash,
+nationalIdHash,
 
-            fullName,
+fullName,
 
-            // role is controlled by backend
-            role: req.body.role || "owner"
+role:"observer"
 
-        });
+});
 
 
         return successResponse(

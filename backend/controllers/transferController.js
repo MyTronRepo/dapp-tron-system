@@ -1,10 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 
-const Transfer =
-    require("../models/Transfer");
-
-const Property =
-    require("../models/Property");
+const Transfer = require("../models/Transfer");
+const Ownership = require("../models/Ownership");
 
 const {
     successResponse,
@@ -15,23 +12,28 @@ const {
     createAuditLog
 } = require("../utils/auditLogger");
 
-const createTransferRequest = async (
-    req,
-    res
-) => {
+
+// =========================
+// Create Transfer Request
+// =========================
+
+const createTransferRequest = async (req, res) => {
 
     try {
 
         const {
             propertyId,
-            seller,
             buyer,
             transferredShare
         } = req.body;
 
+
+        const seller =
+            req.user.walletAddress;
+
+
         if (
             !propertyId ||
-            !seller ||
             !buyer ||
             !transferredShare
         ) {
@@ -45,7 +47,6 @@ const createTransferRequest = async (
         }
 
 
-        // Prevent self transfer
         if (seller === buyer) {
 
             return errorResponse(
@@ -56,9 +57,8 @@ const createTransferRequest = async (
 
         }
 
-        if (
-            Number(transferredShare) < 1
-        ) {
+
+        if (Number(transferredShare) < 1) {
 
             return errorResponse(
                 res,
@@ -68,28 +68,18 @@ const createTransferRequest = async (
 
         }
 
-        const property =
-            await Property.findOne({
-                propertyId
+
+        const sellerOwnership =
+            await Ownership.findOne({
+
+                propertyId,
+
+                walletAddress: seller
+
             });
 
-        if (!property) {
 
-            return errorResponse(
-                res,
-                "Property not found",
-                404
-            );
-
-        }
-
-        const sellerOwner =
-            property.owners.find(
-                owner =>
-                    owner.walletAddress === seller
-            );
-
-        if (!sellerOwner) {
+        if (!sellerOwnership) {
 
             return errorResponse(
                 res,
@@ -99,8 +89,9 @@ const createTransferRequest = async (
 
         }
 
+
         if (
-            sellerOwner.share <
+            sellerOwnership.share <
             Number(transferredShare)
         ) {
 
@@ -112,41 +103,41 @@ const createTransferRequest = async (
 
         }
 
-        const existingTransfer = await Transfer.findOne({
 
-    propertyId,
+        const existingTransfer =
+            await Transfer.findOne({
 
-    seller,
+                propertyId,
 
-    buyer,
+                seller,
 
-    status: {
+                buyer,
 
-        $in: [
+                status: {
 
-            "PendingBuyer",
+                    $in: [
 
-            "PendingAdmin"
+                        "PendingBuyer",
 
-        ]
+                        "PendingAdmin"
 
-    }
+                    ]
 
-});
+                }
 
-if (existingTransfer) {
+            });
 
-    return errorResponse(
 
-        res,
+        if (existingTransfer) {
 
-        "There is already an active transfer request between these users",
+            return errorResponse(
+                res,
+                "Active transfer already exists",
+                409
+            );
 
-        409
+        }
 
-    );
-
-}
 
         const transfer =
             await Transfer.create({
@@ -179,31 +170,39 @@ if (existingTransfer) {
 
             });
 
-            await createAuditLog({
 
-    action: "CREATE_TRANSFER_REQUEST",
+        await createAuditLog({
 
-    entity: "Transfer",
+            action:
+                "CREATE_TRANSFER_REQUEST",
 
-    entityId: transfer.transferId,
+            entity:
+                "Transfer",
 
-    performedBy: seller,
+            entityId:
+                transfer.transferId,
 
-    role: "Owner",
+            performedBy:
+                seller,
 
-    ipAddress: req.ip,
+            role:
+                "Owner",
 
-    details: {
+            ipAddress:
+                req.ip,
 
-        propertyId,
+            details: {
 
-        buyer,
+                propertyId,
 
-        transferredShare
+                buyer,
 
-    }
+                transferredShare
 
-});
+            }
+
+        });
+
 
         return successResponse(
             res,
@@ -211,9 +210,9 @@ if (existingTransfer) {
             "Transfer request created successfully"
         );
 
-    }
 
-    catch (error) {
+    }
+    catch(error) {
 
         return errorResponse(
             res,
@@ -225,46 +224,52 @@ if (existingTransfer) {
 
 };
 
-const getAllTransfers = async (
-    req,
-    res
-) => {
+
+
+// =========================
+// Get Transfers
+// =========================
+
+const getAllTransfers = async (req, res) => {
 
     try {
 
         const {
-
             propertyId,
-
             seller,
-
             buyer,
-
             status,
-
             completed
-
         } = req.query;
+
 
         const query = {};
 
-        if (propertyId)
+
+        if(propertyId)
             query.propertyId = propertyId;
 
-        if (seller)
+
+        if(seller)
             query.seller = seller;
 
-        if (buyer)
+
+        if(buyer)
             query.buyer = buyer;
 
-        if (status)
+
+        if(status)
             query.status = status;
 
-        if (completed !== undefined)
-            query.completed = completed === "true";
+
+        if(completed !== undefined)
+            query.completed =
+                completed === "true";
+
 
         const transfers =
             await Transfer.find(query);
+
 
         return successResponse(
             res,
@@ -272,8 +277,9 @@ const getAllTransfers = async (
             "Transfers fetched successfully"
         );
 
+
     }
-    catch (error) {
+    catch(error) {
 
         return errorResponse(
             res,
@@ -285,17 +291,23 @@ const getAllTransfers = async (
 
 };
 
-const getTransferHistory = async (
-    req,
-    res
-) => {
+
+
+// =========================
+// Transfer History
+// =========================
+
+const getTransferHistory = async (req,res)=>{
 
     try {
 
         const history =
             await Transfer.find({
-                status: "Approved"
+
+                status:"Approved"
+
             });
+
 
         return successResponse(
             res,
@@ -303,8 +315,9 @@ const getTransferHistory = async (
             "Transfer history fetched successfully"
         );
 
+
     }
-    catch (error) {
+    catch(error){
 
         return errorResponse(
             res,
@@ -316,23 +329,26 @@ const getTransferHistory = async (
 
 };
 
-const approveTransferByBuyer = async (
-    req,
-    res
-) => {
+
+
+// =========================
+// Buyer Approve
+// =========================
+
+const approveTransferByBuyer = async(req,res)=>{
 
     try {
 
-        const {
-            transferId
-        } = req.params;
-
         const transfer =
             await Transfer.findOne({
-                transferId
+
+                transferId:
+                    req.params.transferId
+
             });
 
-        if (!transfer) {
+
+        if(!transfer){
 
             return errorResponse(
                 res,
@@ -342,62 +358,64 @@ const approveTransferByBuyer = async (
 
         }
 
-        if (
-            transfer.status !==
-            "PendingBuyer"
-        ) {
+
+        if(transfer.status !== "PendingBuyer"){
 
             return errorResponse(
                 res,
-                "Transfer cannot be approved by buyer",
+                "Transfer cannot be approved",
                 400
             );
 
         }
 
-        if (Date.now() > transfer.expireAt) {
 
-     transfer.status = "Expired";
+        if(Date.now() > transfer.expireAt){
 
-    await transfer.save();
+            transfer.status="Expired";
 
-    return errorResponse(
-        res,
-        "Transfer request has expired",
-        400
-    );
+            await transfer.save();
 
-}
 
-        transfer.buyerApproved = true;
+            return errorResponse(
+                res,
+                "Transfer request expired",
+                400
+            );
 
-        transfer.status =
-            "PendingAdmin";
+        }
+
+
+        transfer.buyerApproved=true;
+
+        transfer.status="PendingAdmin";
+
 
         await transfer.save();
 
+
         await createAuditLog({
 
-    action: "BUYER_APPROVED_TRANSFER",
+            action:
+                "BUYER_APPROVED_TRANSFER",
 
-    entity: "Transfer",
+            entity:
+                "Transfer",
 
-    entityId: transfer.transferId,
+            entityId:
+                transfer.transferId,
 
-    performedBy: transfer.buyer,
+            performedBy:
+                transfer.buyer,
 
-    role: "Buyer",
+            role:
+                "Buyer",
 
-    ipAddress: req.ip,
+            ipAddress:
+                req.ip
 
-    details: {
+        });
 
-        propertyId:
-            transfer.propertyId
-
-    }
-
-});
 
         return successResponse(
             res,
@@ -405,8 +423,9 @@ const approveTransferByBuyer = async (
             "Transfer approved by buyer"
         );
 
+
     }
-    catch (error) {
+    catch(error){
 
         return errorResponse(
             res,
@@ -418,23 +437,26 @@ const approveTransferByBuyer = async (
 
 };
 
-const approveTransferByAdmin = async (
-    req,
-    res
-) => {
+
+
+// =========================
+// Admin Approve
+// =========================
+
+const approveTransferByAdmin = async(req,res)=>{
 
     try {
 
-        const {
-            transferId
-        } = req.params;
-
         const transfer =
             await Transfer.findOne({
-                transferId
+
+                transferId:
+                    req.params.transferId
+
             });
 
-        if (!transfer) {
+
+        if(!transfer){
 
             return errorResponse(
                 res,
@@ -444,116 +466,129 @@ const approveTransferByAdmin = async (
 
         }
 
-        if (
-            transfer.status !==
-            "PendingAdmin"
-        ) {
+
+        if(transfer.status !== "PendingAdmin"){
 
             return errorResponse(
                 res,
-                "Transfer must be approved by buyer first",
+                "Buyer approval required first",
                 400
             );
 
         }
 
-        if (Date.now() > transfer.expireAt) {
 
-    transfer.status = "Expired";
+        if(Date.now() > transfer.expireAt){
 
-    await transfer.save();
+            transfer.status="Expired";
 
-    return errorResponse(
-        res,
-        "Transfer request has expired",
-        400
-    );
+            await transfer.save();
 
-}
 
-        const property =
-            await Property.findOne({
+            return errorResponse(
+                res,
+                "Transfer request expired",
+                400
+            );
+
+        }
+
+
+
+        const sellerOwnership =
+            await Ownership.findOne({
+
                 propertyId:
-                    transfer.propertyId
+                    transfer.propertyId,
+
+                walletAddress:
+                    transfer.seller
+
             });
 
-        if (!property) {
+
+
+        if(!sellerOwnership){
 
             return errorResponse(
                 res,
-                "Property not found",
+                "Seller ownership not found",
                 404
             );
 
         }
 
-        const seller =
-            property.owners.find(
-                owner =>
-                    owner.walletAddress ===
-                    transfer.seller
-            );
 
-        if (!seller) {
 
-            return errorResponse(
-                res,
-                "Seller not found",
-                404
-            );
-
-        }
-
-        if (
-            seller.share <
+        if(
+            sellerOwnership.share <
             transfer.transferredShare
-        ) {
+        ){
 
             return errorResponse(
                 res,
-                "Seller share is insufficient",
+                "Insufficient ownership share",
                 400
             );
 
         }
 
-        seller.share -=
+
+
+        sellerOwnership.share -=
             Number(
                 transfer.transferredShare
             );
 
-        if (seller.share === 0) {
 
-            property.owners =
-                property.owners.filter(
 
-                    owner =>
+        if(sellerOwnership.share === 0){
 
-                        owner.walletAddress !==
+            await Ownership.deleteOne({
 
-                        transfer.seller
+                _id:
+                    sellerOwnership._id
 
-                );
+            });
+
+        }
+        else {
+
+            await sellerOwnership.save();
 
         }
 
-        let buyer =
-            property.owners.find(
-                owner =>
-                    owner.walletAddress ===
+
+
+        let buyerOwnership =
+            await Ownership.findOne({
+
+                propertyId:
+                    transfer.propertyId,
+
+                walletAddress:
                     transfer.buyer
-            );
 
-        if (buyer) {
+            });
 
-            buyer.share +=
+
+
+        if(buyerOwnership){
+
+            buyerOwnership.share +=
                 Number(
                     transfer.transferredShare
                 );
 
-        } else {
+            await buyerOwnership.save();
 
-            property.owners.push({
+        }
+        else {
+
+            await Ownership.create({
+
+                propertyId:
+                    transfer.propertyId,
 
                 walletAddress:
                     transfer.buyer,
@@ -570,64 +605,68 @@ const approveTransferByAdmin = async (
 
         }
 
-        await property.save();
 
-        await createAuditLog({
 
-    action: "ADMIN_APPROVED_TRANSFER",
+        transfer.adminApproved=true;
 
-    entity: "Transfer",
+        transfer.completed=true;
 
-    entityId: transfer.transferId,
+        transfer.status="Approved";
 
-    performedBy:
-        req.user?.walletAddress || "Admin",
-
-    role:
-        req.user?.role || "Admin",
-
-    ipAddress: req.ip,
-
-    details: {
-
-        propertyId:
-            transfer.propertyId,
-
-        seller:
-            transfer.seller,
-
-        buyer:
-            transfer.buyer,
-
-        transferredShare:
-            transfer.transferredShare
-
-    }
-
-});
-
-        transfer.adminApproved = true;
-
-        transfer.completed = true;
-
-        transfer.blockchainTxId = "";
-
-        transfer.status = "Approved";
 
         await transfer.save();
 
+
+
+        await createAuditLog({
+
+            action:
+                "ADMIN_APPROVED_TRANSFER",
+
+            entity:
+                "Transfer",
+
+            entityId:
+                transfer.transferId,
+
+            performedBy:
+                req.user.walletAddress,
+
+            role:
+                "Admin",
+
+            ipAddress:
+                req.ip,
+
+            details:{
+
+                propertyId:
+                    transfer.propertyId,
+
+                seller:
+                    transfer.seller,
+
+                buyer:
+                    transfer.buyer,
+
+                transferredShare:
+                    transfer.transferredShare
+
+            }
+
+        });
+
+
+
         return successResponse(
             res,
-            {
-                transfer,
-                owners:
-                    property.owners
-            },
+            transfer,
             "Transfer approved by admin"
         );
 
+
     }
-    catch (error) {
+    catch(error){
 
         return errorResponse(
             res,
@@ -638,6 +677,8 @@ const approveTransferByAdmin = async (
     }
 
 };
+
+
 
 module.exports = {
 

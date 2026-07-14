@@ -11,15 +11,13 @@ const registerValidation = [
 
 
     body("nationalIdHash")
-        .notEmpty()
-        .withMessage("National ID hash is required")
+        .optional()
         .isString()
         .withMessage("National ID hash must be a string"),
 
 
     body("fullName")
-        .notEmpty()
-        .withMessage("Full name is required")
+        .optional()
         .isString()
         .withMessage("Full name must be a string")
 

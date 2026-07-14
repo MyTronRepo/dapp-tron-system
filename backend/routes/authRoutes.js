@@ -55,6 +55,12 @@ const {
  *               role:
  *                 type: string
  *                 example: Owner
+ *                 enum:
+                   - owner
+                   - buyer
+                   - admin
+                   - observer
+                   example: owner
  *     responses:
  *       201:
  *         description: User registered successfully

@@ -9,11 +9,12 @@ const userSchema = new mongoose.Schema(
         trim: true
     },
 
-    nationalIdHash: {
-        type: String,
-        required: true,
-        trim: true
-    },
+    nationalIdHash:{
+    type:String,
+    required:false,
+    trim:true
+},
+    
 
     fullName: {
         type: String,

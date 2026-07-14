@@ -15,8 +15,9 @@ const ownershipSchema = new mongoose.Schema(
     },
 
     nationalIdHash: {
-        type: String,
-        required: true
+    type:String,
+    required:false,
+    trim:true
     },
 
     share: {
