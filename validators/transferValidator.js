@@ -6,10 +6,6 @@ const transferCreateValidation = [
         .notEmpty()
         .withMessage("Property ID is required"),
 
-    body("seller")
-        .notEmpty()
-        .withMessage("Seller wallet is required"),
-
     body("buyer")
         .notEmpty()
         .withMessage("Buyer wallet is required"),

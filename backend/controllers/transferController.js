@@ -304,7 +304,7 @@ const getTransferHistory = async (req,res)=>{
         const history =
             await Transfer.find({
 
-                status:"Approved"
+                status:"Completed"
 
             });
 
@@ -611,7 +611,7 @@ const approveTransferByAdmin = async(req,res)=>{
 
         transfer.completed=true;
 
-        transfer.status="Approved";
+        transfer.status="Completed";
 
 
         await transfer.save();
