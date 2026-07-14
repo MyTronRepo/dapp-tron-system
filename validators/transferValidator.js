@@ -19,7 +19,5 @@ const transferCreateValidation = [
 ];
 
 module.exports = {
-
     transferCreateValidation
-
 };

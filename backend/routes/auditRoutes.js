@@ -22,10 +22,11 @@ router.get(
 
     authenticate,
 
-    authorize("Admin"),
+    authorize("admin"),
 
     getAuditLogs
 
 );
+
 
 module.exports = router;

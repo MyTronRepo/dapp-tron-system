@@ -30,8 +30,6 @@ const {
 } = require("../../validators/propertyValidator");
 
 
-
-// REGISTER PROPERTY
 router.post(
     "/register",
 
@@ -49,9 +47,6 @@ router.post(
 );
 
 
-
-// SEARCH PROPERTY
-
 router.get(
 
     "/search",
@@ -62,9 +57,6 @@ router.get(
 
 );
 
-
-
-// GET PROPERTY
 
 router.get(
 
@@ -77,8 +69,6 @@ router.get(
 );
 
 
-
-// VERIFY / REJECT PROPERTY
 
 router.patch(
 
@@ -93,6 +83,7 @@ router.patch(
     updatePropertyStatus
 
 );
+
 
 
 module.exports = router;

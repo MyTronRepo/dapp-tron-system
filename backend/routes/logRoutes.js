@@ -22,7 +22,7 @@ router.get(
 
     authenticate,
 
-    authorize("Admin"),
+    authorize("admin"),
 
     getLogs
 

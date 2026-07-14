@@ -2,10 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const swaggerUi = require("swagger-ui-express");
 const dotenv = require("dotenv");
+const userRoutes = require("./routes/userRoutes");
 
-const swaggerSpec = require("./config/swagger");
 const connectDatabase = require("./config/database");
 
 
@@ -100,20 +99,11 @@ app.use("/api/transfers", transferRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
 
+app.use("/api/users", userRoutes);
+
 app.use("/api/logs", logRoutes);
 
 app.use("/api/audit", auditRoutes);
-
-
-// =========================
-// Swagger
-// =========================
-
-app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec)
-);
 
 
 // =========================
