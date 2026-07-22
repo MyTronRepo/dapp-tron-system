@@ -24,9 +24,11 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.18.2",
     "multer": "^2.2.0",
-    "tronweb": "^5.3.3",
+    "react-router-dom": "^6.30.4",
+    "tronweb": "^5.3.5",
     "uuid": "^9.0.1",
-    "xss-clean": "^0.1.4"
+    "xss-clean": "^0.1.4",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
