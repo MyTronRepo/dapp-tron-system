@@ -1,43 +1,24 @@
-import { Outlet, useNavigate } from "react-router-dom";
-import useAuthStore from "../../store/authStore";
+import { Outlet } from "react-router-dom";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
 
 function MainLayout() {
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div>
-      <header>
-        <h2>Real Estate DApp</h2>
+      <Navbar />
 
-        {user && (
-          <div>
-            <span>{user.walletAddress}</span>
-            <span>{user.role}</span>
+      <div>
+        <Sidebar />
 
-            <button onClick={handleLogout}>
-              Logout
-            </button>
-          </div>
-        )}
-      </header>
-
-      <nav>
-        <p>Navigation</p>
-      </nav>
-
-      <main>
-        <Outlet />
-      </main>
+        <main>
+          <Outlet />
+        </main>
+      </div>
 
       <footer>
-        <p>TRON Blockchain Real Estate System</p>
+        <p>
+          TRON Blockchain Real Estate System
+        </p>
       </footer>
     </div>
   );

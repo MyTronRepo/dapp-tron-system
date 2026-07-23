@@ -5,61 +5,94 @@ import Register from "../pages/auth/Register";
 
 import MainLayout from "../components/layout/MainLayout";
 import Home from "../pages/home/Home";
+import Dashboard from "../pages/dashboard/Dashboard";
+
+import Properties from "../pages/properties/Properties";
+import Documents from "../pages/documents/Documents";
+import Transfers from "../pages/transfers/Transfers";
+import Admin from "../pages/admin/Admin";
+import Logs from "../pages/logs/Logs";
 
 import ProtectedRoute from "./ProtectedRoute";
-import Dashboard from "../pages/dashboard/Dashboard";
 
 
 function AppRouter() {
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
 
-        <Route 
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/register" element={<Register />} />
 
-
-        <Route 
-          path="/register"
-          element={<Register />}
-        />
-
-
-        {/* Public Layout */}
 
         <Route element={<MainLayout />}>
 
-          <Route 
-            path="/" 
-            element={<Home />} 
+          <Route path="/" element={<Home />} />
+
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
           />
 
 
+          <Route
+            path="/properties"
+            element={
+              <ProtectedRoute>
+                <Properties />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/documents"
+            element={
+              <ProtectedRoute>
+                <Documents />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/transfers"
+            element={
+              <ProtectedRoute>
+                <Transfers />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/logs"
+            element={
+              <ProtectedRoute>
+                <Logs />
+              </ProtectedRoute>
+            }
+          />
+
         </Route>
 
-
-
-        {/* Protected Routes */}
-
-       <Route element={<MainLayout />}>
-  <Route path="/" element={<Home />} />
-
-  <Route
-    path="/dashboard"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
-</Route>
       </Routes>
-
     </BrowserRouter>
   );
 }
