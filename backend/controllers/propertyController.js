@@ -352,10 +352,14 @@ const updatePropertyStatus = async(req,res)=>{
         }
 
 
-        property.status = status;
-
-        await property.save();
-
+        await Property.updateOne(
+    {
+        propertyId: req.params.propertyId
+    },
+    {
+        status
+    }
+);
 
 
         await createAuditLog({
