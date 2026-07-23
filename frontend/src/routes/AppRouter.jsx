@@ -46,16 +46,18 @@ function AppRouter() {
 
         {/* Protected Routes */}
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+       <Route element={<MainLayout />}>
+  <Route path="/" element={<Home />} />
 
-
+  <Route
+    path="/dashboard"
+    element={
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    }
+  />
+</Route>
       </Routes>
 
     </BrowserRouter>
