@@ -159,10 +159,6 @@ const getDocumentsByProperty = async (req, res) => {
             query.uploadedBy = uploadedBy;
 
 
-        if (verified !== undefined)
-            query.verified = verified === "true";
-
-
         const documents =
             await Document.find(query)
                 .sort({
@@ -268,7 +264,14 @@ const verifyDocument = async(req,res)=>{
         }
 
 
-        document.verified = true;
+        document.status = "Verified";
+
+        document.verifiedBy =
+            req.user?.walletAddress || "Admin";
+
+        document.verifiedAt =
+            new Date();
+
 
         await document.save();
 
@@ -300,6 +303,86 @@ const verifyDocument = async(req,res)=>{
             res,
             document,
             "Document verified successfully"
+        );
+
+
+    }
+    catch(error){
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+
+    }
+
+};
+
+
+
+// REJECT DOCUMENT
+const rejectDocument = async(req,res)=>{
+
+    try{
+
+        const {
+            documentId
+        } = req.params;
+
+
+        const document =
+            await Document.findOne({
+                documentId
+            });
+
+
+        if(!document){
+
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+
+        }
+
+
+        document.status = "Rejected";
+
+
+        await document.save();
+
+
+
+        await createAuditLog({
+
+            action:"REJECT_DOCUMENT",
+
+            entity:"Document",
+
+            entityId:document.documentId,
+
+            performedBy:
+                req.user?.walletAddress || "Admin",
+
+            role:
+                req.user?.role || "Admin",
+
+            ipAddress:req.ip,
+
+            details:{
+                propertyId:document.propertyId
+            }
+
+        });
+
+
+
+        return successResponse(
+            res,
+            document,
+            "Document rejected successfully"
         );
 
 
@@ -401,21 +484,21 @@ const uploadDocument = async(req,res)=>{
         }
 
 
-       const hash =
-    generateFileHash(
-        req.file.path
-    );
+        const hash =
+            generateFileHash(
+                req.file.path
+            );
 
 
-const ipfsResult =
-    await uploadToIPFS(
-        req.file.path
-    );
+        const ipfsResult =
+            await uploadToIPFS(
+                req.file.path
+            );
 
 
-document.documentHash = hash;
+        document.fileHash = hash;
 
-document.documentURI = ipfsResult.cid;
+        document.documentURI = ipfsResult.cid;
 
 
         await document.save();
@@ -439,9 +522,9 @@ document.documentURI = ipfsResult.cid;
             ipAddress:req.ip,
 
             details:{
-    documentURI: ipfsResult.cid,
-    documentHash: hash
-}
+                documentURI: ipfsResult.cid,
+                documentHash: hash
+            }
 
         });
 
@@ -482,6 +565,8 @@ module.exports = {
     getDocumentById,
 
     verifyDocument,
+
+    rejectDocument,
 
     uploadDocument
 

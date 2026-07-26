@@ -1,6 +1,7 @@
 import api from "./api";
 
 
+
 export const getDocumentsByProperty = async (propertyId) => {
 
   const response = await api.get(
@@ -13,6 +14,7 @@ export const getDocumentsByProperty = async (propertyId) => {
 
 
 
+
 export const getDocumentById = async (documentId) => {
 
   const response = await api.get(
@@ -22,6 +24,7 @@ export const getDocumentById = async (documentId) => {
   return response.data;
 
 };
+
 
 
 
@@ -38,9 +41,11 @@ export const registerDocument = async (data) => {
 
 
 
+
 export const uploadDocument = async (documentId, file) => {
 
   const formData = new FormData();
+
 
   formData.append(
     "document",
@@ -48,9 +53,13 @@ export const uploadDocument = async (documentId, file) => {
   );
 
 
+
   const response = await api.post(
+
     `/documents/upload/${documentId}`,
+
     formData
+
   );
 
 
@@ -60,10 +69,29 @@ export const uploadDocument = async (documentId, file) => {
 
 
 
+
 export const verifyDocument = async (documentId) => {
 
   const response = await api.put(
+
     `/documents/verify/${documentId}`
+
+  );
+
+
+  return response.data;
+
+};
+
+
+
+
+export const rejectDocument = async (documentId) => {
+
+  const response = await api.put(
+
+    `/documents/reject/${documentId}`
+
   );
 
 

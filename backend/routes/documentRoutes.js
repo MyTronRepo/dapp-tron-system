@@ -32,6 +32,8 @@ const {
 
     verifyDocument,
 
+    rejectDocument,
+
     uploadDocument
 
 } = require("../controllers/documentController");
@@ -60,7 +62,6 @@ router.post(
 
 
 // GET DOCUMENTS
-
 router.get(
 
     "/property/:propertyId",
@@ -74,7 +75,6 @@ router.get(
 
 
 // GET DOCUMENT
-
 router.get(
 
     "/:documentId",
@@ -88,7 +88,6 @@ router.get(
 
 
 // VERIFY DOCUMENT
-
 router.put(
 
     "/verify/:documentId",
@@ -105,8 +104,24 @@ router.put(
 
 
 
-// UPLOAD DOCUMENT
+// REJECT DOCUMENT
+router.put(
 
+    "/reject/:documentId",
+
+    authenticate,
+
+    authorize(
+        "admin"
+    ),
+
+    rejectDocument
+
+);
+
+
+
+// UPLOAD DOCUMENT
 router.post(
 
     "/upload/:documentId",
