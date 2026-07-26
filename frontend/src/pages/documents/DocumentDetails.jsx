@@ -143,7 +143,11 @@ function DocumentDetails() {
 
           <tr>
             <td>File Hash</td>
-            <td>{document.fileHash}</td>
+            <td>
+  {document.fileHash
+    ? `${document.fileHash.substring(0,25)}...`
+    : "Not generated"}
+</td>
           </tr>
 
 
@@ -152,6 +156,24 @@ function DocumentDetails() {
             <td>{document.documentURI}</td>
           </tr>
 
+<tr>
+  <td>File</td>
+
+  <td>
+    {document.ipfsCID ? (
+      <a
+        href={`https://ipfs.io/ipfs/${document.ipfsCID}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        View File on IPFS
+      </a>
+    ) : (
+      "No file available"
+    )}
+  </td>
+
+</tr>
 
           <tr>
             <td>Created At</td>

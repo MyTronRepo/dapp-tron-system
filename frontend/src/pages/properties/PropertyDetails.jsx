@@ -22,9 +22,7 @@ function PropertyDetails() {
         const response = await getPropertyById(propertyId);
 
         setProperty(response.data.property);
-
         setOwners(response.data.owners);
-
 
       } catch (err) {
 
@@ -67,44 +65,103 @@ function PropertyDetails() {
 
         <div>
 
-          <p>ID: {property.propertyId}</p>
+
+          <h2>Basic Information</h2>
+
 
           <p>
-            Location:
+            <strong>ID:</strong> {property.propertyId}
+          </p>
+
+
+          <p>
+            <strong>Location:</strong>{" "}
             {property.province} -
             {property.city} -
             {property.district}
           </p>
 
+
           <p>
-            Parcel:
+            <strong>Parcel Number:</strong>{" "}
             {property.parcelNumber}
           </p>
 
+
           <p>
-            Area:
+            <strong>Area:</strong>{" "}
             {property.area}
           </p>
 
+
           <p>
-            Build Year:
+            <strong>Build Year:</strong>{" "}
             {property.buildYear}
           </p>
 
+
           <p>
-            Usage:
+            <strong>Usage:</strong>{" "}
             {property.usageType}
           </p>
 
+
           <p>
-            Status:
+            <strong>Construction Status:</strong>{" "}
+            {property.constructionStatus}
+          </p>
+
+
+          <p>
+            <strong>Status:</strong>{" "}
             {property.status}
           </p>
+
+
+
+          <hr />
+
+
+
+          <h2>Blockchain Information</h2>
+
+
+          <p>
+            <strong>Property ID:</strong>{" "}
+            {property.propertyId}
+          </p>
+
+
+          <p>
+            <strong>Blockchain Status:</strong>{" "}
+            {
+              property.status === "Verified"
+                ? "Registered on Blockchain"
+                : "Waiting for Blockchain Verification"
+            }
+          </p>
+
+
+          <p>
+            <strong>Contract Address:</strong>{" "}
+            Not Available
+          </p>
+
+
+          <p>
+            <strong>Transaction Hash:</strong>{" "}
+            Not Available
+          </p>
+
 
 
         </div>
 
       )}
+
+
+
+      <hr />
 
 
 
@@ -116,33 +173,50 @@ function PropertyDetails() {
         <thead>
 
           <tr>
-            <th>Wallet</th>
-            <th>National Hash</th>
+
+            <th>Wallet Address</th>
+            <th>National ID Hash</th>
             <th>Share</th>
+
           </tr>
 
         </thead>
 
 
+
         <tbody>
+
 
           {owners.map((owner) => (
 
             <tr key={owner._id}>
 
-              <td>{owner.walletAddress}</td>
 
-              <td>{owner.nationalIdHash}</td>
+              <td>
+                {owner.walletAddress}
+              </td>
 
-              <td>{owner.share}%</td>
+
+              <td>
+                {owner.nationalIdHash}
+              </td>
+
+
+              <td>
+                {owner.share}%
+              </td>
+
 
             </tr>
 
           ))}
 
+
         </tbody>
 
+
       </table>
+
 
 
     </div>
