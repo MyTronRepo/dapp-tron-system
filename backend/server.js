@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const dotenv = require("dotenv");
 const userRoutes = require("./routes/userRoutes");
+const ownershipRoutes = require("./routes/ownershipRoutes");
 
 const connectDatabase = require("./config/database");
 
@@ -105,6 +106,7 @@ app.use("/api/logs", logRoutes);
 
 app.use("/api/audit", auditRoutes);
 
+app.use("/api/ownership", ownershipRoutes);
 
 // =========================
 // Root Route
