@@ -10,7 +10,7 @@ function Dashboard() {
     const fetchStats = async () => {
       try {
         const response = await getDashboardStatistics();
-        setStats(response.data);
+        setStats(response.data.stats);
       } catch (err) {
         setError("Failed to load dashboard");
       } finally {

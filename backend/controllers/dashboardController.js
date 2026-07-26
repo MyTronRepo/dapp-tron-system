@@ -1,69 +1,97 @@
 const User = require("../models/User");
-
 const Property = require("../models/Property");
-
 const Document = require("../models/Document");
-
 const Transfer = require("../models/Transfer");
+const AuditLog = require("../models/AuditLog");
 
 const {
-
     successResponse,
-
     errorResponse
-
 } = require("../utils/responseHandler");
 
-const getDashboardStatistics = async (
 
-    req,
-
-    res
-
-) => {
+const getDashboardStatistics = async (req, res) => {
 
     try {
+
 
         const users =
             await User.countDocuments();
 
+
         const properties =
             await Property.countDocuments();
+
 
         const documents =
             await Document.countDocuments();
 
+
         const transfers =
             await Transfer.countDocuments();
 
+
+
         const pendingTransfers =
             await Transfer.countDocuments({
-
-                status: "PendingBuyer"
-
+                status: {
+                    $in: [
+                        "PendingSeller",
+                        "PendingBuyer",
+                        "PendingAdmin"
+                    ]
+                }
             });
 
-        const approvedTransfers =
+
+
+        const completedTransfers =
             await Transfer.countDocuments({
-
-                status: "Approved"
-
+                status: "Completed"
             });
 
-       const verifiedDocuments =
-    await Document.countDocuments({
-
-        status: "Verified"
-
-    });
 
 
-const pendingDocuments =
-    await Document.countDocuments({
+        const verifiedDocuments =
+            await Document.countDocuments({
+                status: "Verified"
+            });
 
-        status: "Pending"
 
-    });
+
+        const pendingDocuments =
+            await Document.countDocuments({
+                status: "Pending"
+            });
+
+
+
+        const recentDocuments =
+            await Document.find()
+                .sort({
+                    createdAt: -1
+                })
+                .limit(5);
+
+
+
+        const recentTransfers =
+            await Transfer.find()
+                .sort({
+                    createdAt: -1
+                })
+                .limit(5);
+
+
+
+        const recentActivities =
+            await AuditLog.find()
+                .sort({
+                    createdAt: -1
+                })
+                .limit(5);
+
+
 
         return successResponse(
 
@@ -71,31 +99,47 @@ const pendingDocuments =
 
             {
 
-                users,
+                stats: {
 
-                properties,
+                    users,
 
-                documents,
+                    properties,
 
-                transfers,
+                    documents,
 
-                pendingTransfers,
+                    transfers,
 
-                approvedTransfers,
+                    pendingTransfers,
 
-                verifiedDocuments,
+                    completedTransfers,
 
-                pendingDocuments
+                    verifiedDocuments,
+
+                    pendingDocuments
+
+                },
+
+
+                recentDocuments,
+
+
+                recentTransfers,
+
+
+                recentActivities
 
             },
+
 
             "Dashboard statistics fetched successfully"
 
         );
 
+
     }
 
-    catch (error) {
+    catch(error){
+
 
         return errorResponse(
 
@@ -107,9 +151,12 @@ const pendingDocuments =
 
         );
 
+
     }
 
 };
+
+
 
 module.exports = {
 
