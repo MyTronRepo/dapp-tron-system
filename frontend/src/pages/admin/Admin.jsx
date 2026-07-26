@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 
 import { getProperties } from "../../services/propertyService";
-import { updatePropertyStatus, getUsers } from "../../services/adminService";
+
+import {
+  updatePropertyStatus,
+  getUsers,
+  updateUserRole,
+  updateUserStatus
+} from "../../services/adminService";
+
+import {
+  getDashboardStatistics
+} from "../../services/dashboardService";
 
 import {
   getDocumentsByProperty,
@@ -19,6 +29,8 @@ function Admin() {
   const [documents, setDocuments] = useState([]);
 
   const [users, setUsers] = useState([]);
+
+  const [statistics, setStatistics] = useState(null);
 
 
 
@@ -41,13 +53,9 @@ function Admin() {
       );
 
 
-    } catch (error) {
+    } catch(error) {
 
-      console.log(
-
-        error.response?.data || error.message
-
-      );
+      console.log(error.response?.data || error.message);
 
     }
 
@@ -62,12 +70,10 @@ function Admin() {
 
     try {
 
-
       const response =
         await getDocumentsByProperty(
           "946daab0-a6f5-4c12-862b-89c19e81179b"
         );
-
 
 
       setDocuments(
@@ -81,18 +87,13 @@ function Admin() {
       );
 
 
-    } catch (error) {
+    } catch(error) {
 
-      console.log(
-
-        error.response?.data || error.message
-
-      );
+      console.log(error.response?.data || error.message);
 
     }
 
   };
-
 
 
 
@@ -105,21 +106,39 @@ function Admin() {
 
       const response = await getUsers();
 
+      setUsers(response.data);
 
-      setUsers(
 
+    } catch(error) {
+
+      console.log(error.response?.data || error.message);
+
+    }
+
+  };
+
+
+
+
+
+
+
+  const loadStatistics = async () => {
+
+    try {
+
+      const response =
+        await getDashboardStatistics();
+
+
+      setStatistics(
         response.data
-
       );
 
 
     } catch(error) {
 
-      console.log(
-
-        error.response?.data || error.message
-
-      );
+      console.log(error.response?.data || error.message);
 
     }
 
@@ -139,6 +158,8 @@ function Admin() {
 
     loadUsers();
 
+    loadStatistics();
+
   }, []);
 
 
@@ -148,25 +169,16 @@ function Admin() {
 
 
   const changeStatus = async (
-
     propertyId,
-
     status
-
   ) => {
-
 
     try {
 
-
       await updatePropertyStatus(
-
         propertyId,
-
         status
-
       );
-
 
 
       setProperties(
@@ -174,7 +186,6 @@ function Admin() {
         properties.filter(
 
           property =>
-
             property.propertyId !== propertyId
 
         )
@@ -182,22 +193,13 @@ function Admin() {
       );
 
 
-
     } catch(error) {
 
-
-      console.log(
-
-        error.response?.data || error.message
-
-      );
-
+      console.log(error.response?.data || error.message);
 
     }
 
-
   };
-
 
 
 
@@ -206,21 +208,12 @@ function Admin() {
 
 
   const handleVerifyDocument = async (
-
     documentId
-
   ) => {
-
 
     try {
 
-
-      await verifyDocument(
-
-        documentId
-
-      );
-
+      await verifyDocument(documentId);
 
 
       setDocuments(
@@ -228,7 +221,6 @@ function Admin() {
         documents.filter(
 
           document =>
-
             document.documentId !== documentId
 
         )
@@ -236,19 +228,11 @@ function Admin() {
       );
 
 
-
     } catch(error) {
 
-
-      console.log(
-
-        error.response?.data || error.message
-
-      );
-
+      console.log(error.response?.data || error.message);
 
     }
-
 
   };
 
@@ -258,23 +242,13 @@ function Admin() {
 
 
 
-
   const handleRejectDocument = async (
-
     documentId
-
   ) => {
-
 
     try {
 
-
-      await rejectDocument(
-
-        documentId
-
-      );
-
+      await rejectDocument(documentId);
 
 
       setDocuments(
@@ -282,7 +256,6 @@ function Admin() {
         documents.filter(
 
           document =>
-
             document.documentId !== documentId
 
         )
@@ -290,19 +263,71 @@ function Admin() {
       );
 
 
-
     } catch(error) {
 
-
-      console.log(
-
-        error.response?.data || error.message
-
-      );
-
+      console.log(error.response?.data || error.message);
 
     }
 
+  };
+
+
+
+
+
+
+
+  const handleRoleChange = async (
+    userId,
+    role
+  ) => {
+
+    try {
+
+      await updateUserRole(
+        userId,
+        role
+      );
+
+
+      loadUsers();
+
+
+    } catch(error) {
+
+      console.log(error.response?.data || error.message);
+
+    }
+
+  };
+
+
+
+
+
+
+
+  const handleStatusChange = async (
+    userId,
+    status
+  ) => {
+
+    try {
+
+      await updateUserStatus(
+        userId,
+        status
+      );
+
+
+      loadUsers();
+
+
+    } catch(error) {
+
+      console.log(error.response?.data || error.message);
+
+    }
 
   };
 
@@ -324,8 +349,73 @@ function Admin() {
 
 
 
-      <h2>Pending Properties</h2>
+      <h2>Admin Statistics</h2>
 
+
+      {statistics && (
+
+        <table border="1">
+
+          <thead>
+
+            <tr>
+
+              <th>Total Users</th>
+
+              <th>Total Properties</th>
+
+              <th>Total Documents</th>
+
+              <th>Total Transfers</th>
+
+              <th>Pending Transfers</th>
+
+              <th>Approved Transfers</th>
+
+              <th>Verified Documents</th>
+
+              <th>Pending Documents</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            <tr>
+
+              <td>{statistics.users}</td>
+
+              <td>{statistics.properties}</td>
+
+              <td>{statistics.documents}</td>
+
+              <td>{statistics.transfers}</td>
+
+              <td>{statistics.pendingTransfers}</td>
+
+              <td>{statistics.approvedTransfers}</td>
+
+              <td>{statistics.verifiedDocuments}</td>
+
+              <td>{statistics.pendingDocuments}</td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      )}
+
+
+
+
+
+
+
+      <h2>Pending Properties</h2>
 
 
       <table border="1">
@@ -348,95 +438,50 @@ function Admin() {
         </thead>
 
 
-
-
         <tbody>
 
 
           {properties.map((property)=>(
 
-
             <tr key={property.propertyId}>
 
 
-              <td>
+              <td>{property.propertyId}</td>
 
-                {property.propertyId}
+              <td>{property.city}</td>
 
-              </td>
-
-
-
-              <td>
-
-                {property.city}
-
-              </td>
-
+              <td>{property.status}</td>
 
 
               <td>
-
-                {property.status}
-
-              </td>
-
-
-
-              <td>
-
 
                 <button
-
                   onClick={() =>
-
                     changeStatus(
-
                       property.propertyId,
-
                       "Verified"
-
                     )
-
                   }
-
                 >
-
                   Verify
-
                 </button>
-
-
-
 
 
                 <button
-
                   onClick={() =>
-
                     changeStatus(
-
                       property.propertyId,
-
                       "Rejected"
-
                     )
-
                   }
-
                 >
-
                   Reject
-
                 </button>
-
-
 
               </td>
 
 
             </tr>
-
 
           ))}
 
@@ -452,11 +497,7 @@ function Admin() {
 
 
 
-
       <h2>Pending Documents</h2>
-
-
-
 
 
       <table border="1">
@@ -464,9 +505,7 @@ function Admin() {
 
         <thead>
 
-
           <tr>
-
 
             <th>ID</th>
 
@@ -478,121 +517,58 @@ function Admin() {
 
             <th>Actions</th>
 
-
           </tr>
 
-
         </thead>
-
-
-
 
 
         <tbody>
 
 
-
           {documents.map((document)=>(
-
-
 
             <tr key={document.documentId}>
 
 
+              <td>{document.documentId}</td>
 
-              <td>
+              <td>{document.documentName}</td>
 
-                {document.documentId}
+              <td>{document.documentType}</td>
 
-              </td>
-
-
-
-
-              <td>
-
-                {document.documentName}
-
-              </td>
-
-
+              <td>{document.status}</td>
 
 
               <td>
-
-                {document.documentType}
-
-              </td>
-
-
-
-
-              <td>
-
-                {document.status}
-
-              </td>
-
-
-
-
-              <td>
-
-
 
                 <button
-
                   onClick={() =>
-
                     handleVerifyDocument(
-
                       document.documentId
-
                     )
-
                   }
-
                 >
-
                   Verify
-
                 </button>
-
-
-
 
 
                 <button
-
                   onClick={() =>
-
                     handleRejectDocument(
-
                       document.documentId
-
                     )
-
                   }
-
                 >
-
                   Reject
-
                 </button>
 
 
-
               </td>
-
-
 
 
             </tr>
 
-
-
           ))}
-
 
 
         </tbody>
@@ -606,10 +582,7 @@ function Admin() {
 
 
 
-
       <h2>Users</h2>
-
-
 
 
       <table border="1">
@@ -617,9 +590,7 @@ function Admin() {
 
         <thead>
 
-
           <tr>
-
 
             <th>Wallet</th>
 
@@ -629,65 +600,97 @@ function Admin() {
 
             <th>Status</th>
 
+            <th>Actions</th>
 
           </tr>
 
-
         </thead>
-
-
-
 
 
         <tbody>
 
 
-
           {users.map((user)=>(
-
-
 
             <tr key={user.walletAddress}>
 
 
-              <td>
+              <td>{user.walletAddress}</td>
 
-                {user.walletAddress}
-
-              </td>
-
+              <td>{user.fullName}</td>
 
 
               <td>
 
-                {user.fullName}
+                <select
+
+                  value={user.role}
+
+                  onChange={(e)=>
+                    handleRoleChange(
+                      user._id,
+                      e.target.value
+                    )
+                  }
+
+                >
+
+                  <option value="owner">owner</option>
+
+                  <option value="buyer">buyer</option>
+
+                  <option value="admin">admin</option>
+
+                  <option value="observer">observer</option>
+
+                </select>
+
 
               </td>
 
+
+              <td>{user.status}</td>
 
 
               <td>
 
-                {user.role}
+                {
+                  user.status === "active"
+
+                  ?
+
+                  <button
+                    onClick={() =>
+                      handleStatusChange(
+                        user._id,
+                        "blocked"
+                      )
+                    }
+                  >
+                    Block
+                  </button>
+
+                  :
+
+                  <button
+                    onClick={() =>
+                      handleStatusChange(
+                        user._id,
+                        "active"
+                      )
+                    }
+                  >
+                    Activate
+                  </button>
+
+                }
 
               </td>
-
-
-
-              <td>
-
-                {user.status}
-
-              </td>
-
 
 
             </tr>
 
-
-
           ))}
-
 
 
         </tbody>
@@ -699,12 +702,10 @@ function Admin() {
 
     </div>
 
-
   );
 
 
 }
-
 
 
 export default Admin;
