@@ -50,19 +50,20 @@ const getDashboardStatistics = async (
 
             });
 
-        const verifiedDocuments =
-            await Document.countDocuments({
+       const verifiedDocuments =
+    await Document.countDocuments({
 
-                verified: true
+        status: "Verified"
 
-            });
+    });
 
-        const pendingDocuments =
-            await Document.countDocuments({
 
-                verified: false
+const pendingDocuments =
+    await Document.countDocuments({
 
-            });
+        status: "Pending"
+
+    });
 
         return successResponse(
 
