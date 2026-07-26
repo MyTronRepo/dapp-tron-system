@@ -13,6 +13,18 @@ export const getTransfers = async () => {
 
 
 
+export const getTransferHistory = async () => {
+
+  const response = await api.get(
+    "/transfers/history"
+  );
+
+  return response.data;
+
+};
+
+
+
 export const createTransfer = async (data) => {
 
   const response = await api.post(
