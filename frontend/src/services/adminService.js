@@ -18,12 +18,8 @@ export const updatePropertyStatus = async (propertyId, status) => {
 
 export const getUsers = async () => {
 
-  const response = await api.get(
-    "/users"
-  );
-
-  return response.data;
-
+  const response = await api.get("/users");
+return response.data.data;
 };
 
 

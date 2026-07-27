@@ -98,3 +98,22 @@ export const rejectDocument = async (documentId) => {
   return response.data;
 
 };
+
+export const getDocuments = async()=>{
+
+ const response =
+ await api.get("/documents");
+
+ return response.data;
+
+}
+
+export const getAllDocuments = async () => {
+
+  const response = await api.get(
+    "/documents"
+  );
+
+  return response.data;
+
+};

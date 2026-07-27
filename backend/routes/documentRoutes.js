@@ -73,6 +73,11 @@ router.get(
 );
 
 
+router.get(
+"/",
+authenticate,
+getDocumentsByProperty
+);
 
 // GET DOCUMENT
 router.get(
