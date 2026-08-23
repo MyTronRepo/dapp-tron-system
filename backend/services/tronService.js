@@ -30,16 +30,21 @@ const registerPropertyOnBlockchain = async ({
                 city,
                 district,
                 parcelNumber,
-                area,
-                buildYear,
+                Number(area),
+                Number(buildYear),
                 usageType,
                 constructionStatus,
-                latitude,
-                longitude
+                Number(latitude),
+                Number(longitude)
             )
             .send({
                 feeLimit: 100000000
             });
+
+        console.log(
+            "Property registered on blockchain:",
+            tx
+        );
 
         return tx;
 
