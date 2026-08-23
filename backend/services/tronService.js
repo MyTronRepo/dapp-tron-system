@@ -1,3 +1,9 @@
+const dns = require("dns");
+
+dns.setDefaultResultOrder("ipv4first");
+
+require("dotenv").config();
+
 const TronWeb = require("tronweb");
 
 const tronWeb = new TronWeb({
@@ -18,10 +24,23 @@ const registerPropertyOnBlockchain = async ({
     latitude,
     longitude
 }) => {
+
+    console.log(
+        "BLOCKCHAIN HOST:",
+        process.env.TRON_FULL_HOST
+    );
+
+    console.log(
+        "BLOCKCHAIN CONTRACT:",
+        process.env.CONTRACT_ADDRESS
+    );
+
     try {
-        const contract = await tronWeb.contract().at(
-            process.env.CONTRACT_ADDRESS
-        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
 
         const tx = await contract
             .registerProperty(
@@ -41,22 +60,27 @@ const registerPropertyOnBlockchain = async ({
                 feeLimit: 100000000
             });
 
+
         console.log(
-            "Property registered on blockchain:",
+            "PROPERTY REGISTERED ON BLOCKCHAIN:",
             tx
         );
 
+
         return tx;
 
+
     } catch (error) {
+
         console.log(
-            "Register Property Blockchain Error:",
+            "BLOCKCHAIN ERROR:",
             error.message
         );
 
         throw error;
     }
 };
+
 
 module.exports = {
     registerPropertyOnBlockchain

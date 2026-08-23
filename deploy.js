@@ -4,7 +4,7 @@ const fs = require("fs");
 const TronWeb = require("tronweb");
 
 const tronWeb = new TronWeb({
-    fullHost: process.env.TRON_FULL_HOST,
+    fullHost: "https://nile.trongrid.io",
     privateKey: process.env.PRIVATE_KEY
 });
 

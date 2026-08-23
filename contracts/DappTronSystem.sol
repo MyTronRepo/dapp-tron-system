@@ -3,10 +3,6 @@
 pragma solidity ^0.8.20;
 
 contract DappTronSystem {
-    // ==========================================
-    // Enums
-    // ==========================================
-
     enum PropertyStatus {
         Pending,
         Verified,
@@ -27,10 +23,6 @@ contract DappTronSystem {
         Rejected,
         Expired
     }
-
-    // ==========================================
-    // Structs
-    // ==========================================
 
     struct Property {
         string propertyId;
@@ -84,10 +76,6 @@ contract DappTronSystem {
         uint256 timestamp;
     }
 
-    // ==========================================
-    // State Variables
-    // ==========================================
-
     address public admin;
 
     uint256 public propertyCounter;
@@ -108,10 +96,6 @@ contract DappTronSystem {
 
     string[] private propertyIds;
 
-    // ==========================================
-    // Events
-    // ==========================================
-
     event PropertyRegistered(string propertyId);
 
     event PropertyVerified(string propertyId);
@@ -128,26 +112,17 @@ contract DappTronSystem {
 
     event AdminChanged(address oldAdmin, address newAdmin);
 
-    // ==========================================
-    // Constructor
-    // ==========================================
+    event OwnerAdded(string propertyId, address walletAddress, uint8 share);
 
     constructor() {
         admin = msg.sender;
     }
 
-    // ==========================================
-    // Modifiers
-    // ==========================================
-
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
+
         _;
     }
-
-    // ==========================================
-    // Property Functions
-    // ==========================================
 
     function registerProperty(
         string calldata propertyId,
@@ -163,12 +138,16 @@ contract DappTronSystem {
         int256 longitude
     ) external {
         require(bytes(propertyId).length > 0, "Property ID is required");
+
         require(bytes(parcelNumber).length > 0, "Parcel number is required");
+
         require(!properties[propertyId].exists, "Property already exists");
+
         require(
             bytes(propertyByParcelNumber[parcelNumber]).length == 0,
             "Parcel number already exists"
         );
+
         require(area > 0, "Area must be greater than zero");
 
         properties[propertyId] = Property({
@@ -188,7 +167,9 @@ contract DappTronSystem {
         });
 
         propertyByParcelNumber[parcelNumber] = propertyId;
+
         propertyIds.push(propertyId);
+
         propertyCounter++;
 
         emit PropertyRegistered(propertyId);
@@ -222,6 +203,91 @@ contract DappTronSystem {
         require(properties[propertyId].exists, "Property not found");
 
         return properties[propertyId];
+    }
+
+    function getPropertyData(
+        string calldata propertyId
+    )
+        external
+        view
+        returns (
+            string memory,
+            string memory,
+            string memory,
+            string memory,
+            string memory,
+            uint256,
+            uint16,
+            string memory,
+            string memory,
+            int256,
+            int256,
+            PropertyStatus,
+            bool
+        )
+    {
+        require(properties[propertyId].exists, "Property not found");
+
+        Property memory p = properties[propertyId];
+
+        return (
+            p.propertyId,
+            p.province,
+            p.city,
+            p.district,
+            p.parcelNumber,
+            p.area,
+            p.buildYear,
+            p.usageType,
+            p.constructionStatus,
+            p.latitude,
+            p.longitude,
+            p.status,
+            p.exists
+        );
+    }
+
+    // ==========================================
+    // Ownership Functions
+    // ==========================================
+
+    function addOwner(
+        string calldata propertyId,
+        address walletAddress,
+        bytes32 nationalIdHash,
+        uint8 share
+    ) external onlyAdmin {
+        require(properties[propertyId].exists, "Property not found");
+
+        require(walletAddress != address(0), "Invalid wallet address");
+
+        require(share > 0 && share <= 100, "Invalid share");
+
+        uint256 totalShare = 0;
+
+        for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
+            totalShare += propertyOwners[propertyId][i].share;
+        }
+
+        require(totalShare + share <= 100, "Share exceeds ownership");
+
+        propertyOwners[propertyId].push(
+            Ownership({
+                walletAddress: walletAddress,
+                nationalIdHash: nationalIdHash,
+                share: share
+            })
+        );
+
+        emit OwnerAdded(propertyId, walletAddress, share);
+    }
+
+    function getOwners(
+        string calldata propertyId
+    ) external view returns (Ownership[] memory) {
+        require(properties[propertyId].exists, "Property not found");
+
+        return propertyOwners[propertyId];
     }
 
     function getPropertyIdByParcel(
