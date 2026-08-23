@@ -12,3 +12,5 @@ coverage/
 .DS_Store
 
 .vscode/
+compile-input.json
+compile-output.json
