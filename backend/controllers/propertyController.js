@@ -147,9 +147,19 @@ const registerProperty = async (req, res) => {
 
         try {
 
-            await registerPropertyOnBlockchain(
-                propertyId
-            );
+           await registerPropertyOnBlockchain({
+    propertyId,
+    province,
+    city,
+    district,
+    parcelNumber,
+    area,
+    buildYear,
+    usageType,
+    constructionStatus,
+    latitude,
+    longitude
+});
 
         }
         catch(error){
