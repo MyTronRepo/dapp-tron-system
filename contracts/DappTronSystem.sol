@@ -120,7 +120,6 @@ contract DappTronSystem {
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
-
         _;
     }
 
@@ -248,7 +247,7 @@ contract DappTronSystem {
     }
 
     // ==========================================
-    // Ownership Functions
+    // Ownership Management
     // ==========================================
 
     function addOwner(
@@ -263,7 +262,7 @@ contract DappTronSystem {
 
         require(share > 0 && share <= 100, "Invalid share");
 
-        uint256 totalShare = 0;
+        uint256 totalShare;
 
         for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
             totalShare += propertyOwners[propertyId][i].share;

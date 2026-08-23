@@ -9,6 +9,11 @@ const propertySchema = new mongoose.Schema(
         unique: true
     },
 
+    blockchainTxId:{
+    type:String,
+    default:null
+},
+
     province: {
         type: String,
         required: true

@@ -3,18 +3,22 @@ const { v4: uuidv4 } = require("uuid");
 const Property = require("../models/Property");
 const Ownership = require("../models/Ownership");
 
+const tronWeb = require("../services/tronService").tronWeb;
+
 const {
     successResponse,
     errorResponse
 } = require("../utils/responseHandler");
 
 const {
-    registerPropertyOnBlockchain
+    registerPropertyOnBlockchain,
+    getPropertyFromBlockchain
 } = require("../services/tronService");
 
 const {
     createAuditLog
 } = require("../utils/auditLogger");
+
 
 
 // REGISTER PROPERTY
@@ -38,6 +42,7 @@ const registerProperty = async (req, res) => {
         } = req.body;
 
 
+
         if (!owners || !Array.isArray(owners) || owners.length === 0) {
 
             return errorResponse(
@@ -47,6 +52,7 @@ const registerProperty = async (req, res) => {
             );
 
         }
+
 
 
         const totalShare = owners.reduce(
@@ -67,10 +73,12 @@ const registerProperty = async (req, res) => {
         }
 
 
+
         const exists =
             await Property.findOne({
                 parcelNumber
             });
+
 
 
         if (exists) {
@@ -89,10 +97,69 @@ const registerProperty = async (req, res) => {
 
 
 
+        let blockchainTxId = null;
+
+
+
+        try {
+
+
+            blockchainTxId =
+                await registerPropertyOnBlockchain({
+
+                    propertyId,
+
+                    province,
+
+                    city,
+
+                    district,
+
+                    parcelNumber,
+
+                    area,
+
+                    buildYear,
+
+                    usageType,
+
+                    constructionStatus,
+
+                    latitude,
+
+                    longitude
+
+                });
+
+
+        }
+        catch(error){
+
+
+            console.log(
+                "Blockchain registration failed:",
+                error.message
+            );
+
+
+            return errorResponse(
+                res,
+                "Blockchain registration failed",
+                500
+            );
+
+        }
+
+
+
+
+
         const property =
             await Property.create({
 
                 propertyId,
+
+                blockchainTxId,
 
                 province,
 
@@ -124,6 +191,8 @@ const registerProperty = async (req, res) => {
 
 
 
+
+
         await Ownership.insertMany(
 
             owners.map(owner => ({
@@ -144,32 +213,6 @@ const registerProperty = async (req, res) => {
         );
 
 
-
-        try {
-
-           await registerPropertyOnBlockchain({
-    propertyId,
-    province,
-    city,
-    district,
-    parcelNumber,
-    area,
-    buildYear,
-    usageType,
-    constructionStatus,
-    latitude,
-    longitude
-});
-
-        }
-        catch(error){
-
-            console.log(
-                "Blockchain skipped:",
-                error.message
-            );
-
-        }
 
 
 
@@ -203,25 +246,40 @@ const registerProperty = async (req, res) => {
 
 
 
+
+
         return successResponse(
+
             res,
+
             property,
+
             "Property registered successfully"
+
         );
+
 
 
     }
     catch(error){
 
+
         return errorResponse(
+
             res,
+
             error.message,
+
             500
+
         );
 
     }
 
 };
+
+
+
 
 
 
@@ -231,52 +289,135 @@ const getPropertyById = async(req,res)=>{
 
     try{
 
+
         const property =
             await Property.findOne({
-                propertyId:req.params.propertyId
+
+                propertyId:
+                    req.params.propertyId
+
             });
+
 
 
         if(!property){
 
+
             return errorResponse(
+
                 res,
+
                 "Property not found",
+
                 404
+
             );
 
         }
 
 
+
+
+
         const owners =
             await Ownership.find({
+
                 propertyId:
                     property.propertyId
+
             });
 
 
+
+
+
+        let blockchainData = null;
+
+        let blockchainVerified = false;
+
+
+
+
+        try{
+
+
+            blockchainData =
+                await getPropertyFromBlockchain(
+
+                    property.propertyId
+
+                );
+
+
+            blockchainVerified = true;
+
+
+        }
+        catch(error){
+
+
+            console.log(
+
+                "Blockchain read failed:",
+
+                error.message
+
+            );
+
+        }
+
+
+
+
+
         return successResponse(
+
             res,
+
             {
+
                 property,
-                owners
+
+                owners,
+
+                blockchain:{
+
+                    verified:
+                        blockchainVerified,
+
+                    data:
+                        blockchainData
+
+                }
+
             },
+
             "Property fetched successfully"
+
         );
+
 
 
     }
     catch(error){
 
+
         return errorResponse(
+
             res,
+
             error.message,
+
             500
+
         );
 
     }
 
 };
+
+
+
 
 
 
@@ -286,32 +427,52 @@ const searchProperties = async(req,res)=>{
 
     try{
 
+
         const properties =
+
             await Property.find(req.query)
+
             .sort({
+
                 createdAt:-1
+
             });
 
 
+
         return successResponse(
+
             res,
+
             properties,
+
             "Properties fetched successfully"
+
         );
+
 
 
     }
     catch(error){
 
+
         return errorResponse(
+
             res,
+
             error.message,
+
             500
+
         );
 
     }
 
 };
+
+
+
+
 
 
 
@@ -321,99 +482,237 @@ const updatePropertyStatus = async(req,res)=>{
 
     try{
 
+
         const {
             status
         } = req.body;
 
 
+
+
         const allowed = [
+
             "Verified",
+
             "Rejected",
+
             "Suspended"
+
         ];
+
+
+
 
 
         if(!allowed.includes(status)){
 
+
             return errorResponse(
+
                 res,
+
                 "Invalid status",
+
                 400
+
             );
 
         }
 
 
+
+
+
         const property =
+
             await Property.findOne({
+
                 propertyId:
                     req.params.propertyId
+
             });
+
+
+
 
 
         if(!property){
 
+
             return errorResponse(
+
                 res,
+
                 "Property not found",
+
                 404
+
             );
 
         }
 
 
+
+
+
         await Property.updateOne(
-    {
-        propertyId: req.params.propertyId
-    },
-    {
-        status
+
+            {
+
+                propertyId:
+                    req.params.propertyId
+
+            },
+
+            {
+
+                status
+
+            }
+
+        );
+
+
+        const updatedProperty =
+    await Property.findOne({
+
+        propertyId:
+            req.params.propertyId
+
+    });
+     
+
+
+
+
+        try {
+
+    const contract =
+        await tronWeb
+        .contract()
+        .at(process.env.CONTRACT_ADDRESS);
+
+
+    if(status === "Verified"){
+
+        await contract
+        .verifyProperty(
+            property.propertyId
+        )
+        .send({
+            feeLimit:100000000
+        });
+
     }
-);
+
+
+    if(status === "Rejected"){
+
+        await contract
+        .rejectProperty(
+            property.propertyId
+        )
+        .send({
+            feeLimit:100000000
+        });
+
+    }
+
+
+    if(status === "Suspended"){
+
+        await contract
+        .suspendProperty(
+            property.propertyId
+        )
+        .send({
+            feeLimit:100000000
+        });
+
+    }
+
+
+}
+catch(error){
+
+    console.log(
+        "Blockchain status update failed:",
+        error.message
+    );
+
+}
+
+
+
 
 
         await createAuditLog({
 
+
             action:
+
                 "UPDATE_PROPERTY_STATUS",
 
+
             entity:
+
                 "Property",
 
+
             entityId:
+
                 property.propertyId,
 
+
             performedBy:
+
                 req.user.walletAddress,
 
+
             role:
+
                 req.user.role,
 
+
             ipAddress:
+
                 req.ip,
 
+
             details:{
+
                 status
+
             }
+
 
         });
 
 
 
-        return successResponse(
-            res,
-            property,
-            "Property status updated"
-        );
+
+
+
+       return successResponse(
+    res,
+    updatedProperty,
+    "Property status updated"
+);
+
 
 
     }
     catch(error){
 
+
         return errorResponse(
+
             res,
+
             error.message,
+
             500
+
         );
 
     }
@@ -422,7 +721,11 @@ const updatePropertyStatus = async(req,res)=>{
 
 
 
+
+
+
 module.exports = {
+
 
     registerProperty,
 
