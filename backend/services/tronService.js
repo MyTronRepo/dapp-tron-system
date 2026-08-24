@@ -9,11 +9,9 @@ const TronWeb = require("tronweb");
 
 const tronWeb = new TronWeb({
 
-    fullNode: "https://api.nileex.io",
-
-    solidityNode: "https://api.nileex.io",
-
-    eventServer: "https://api.nileex.io",
+    fullNode: "https://nile.trongrid.io",
+solidityNode: "https://nile.trongrid.io",
+eventServer: "https://nile.trongrid.io",
 
     privateKey: process.env.PRIVATE_KEY
 
@@ -50,11 +48,10 @@ const registerPropertyOnBlockchain = async ({
 }) => {
 
 
-    console.log(
-        "BLOCKCHAIN HOST:",
-        "https://api.nileex.io"
-    );
-
+ console.log(
+    "BLOCKCHAIN HOST:",
+    "https://nile.trongrid.io"
+);
 
     console.log(
         "BLOCKCHAIN CONTRACT:",

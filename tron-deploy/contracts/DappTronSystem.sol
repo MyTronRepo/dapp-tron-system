@@ -123,55 +123,63 @@ contract DappTronSystem {
         _;
     }
 
-    function registerProperty(
-        string calldata propertyId,
-        string calldata province,
-        string calldata city,
-        string calldata district,
-        string calldata parcelNumber,
-        uint256 area,
-        uint16 buildYear,
-        string calldata usageType,
-        string calldata constructionStatus,
-        int256 latitude,
-        int256 longitude
-    ) external {
-        require(bytes(propertyId).length > 0, "Property ID is required");
+    struct PropertyInput {
+        string propertyId;
+        string province;
+        string city;
+        string district;
+        string parcelNumber;
+        uint256 area;
+        uint16 buildYear;
+        string usageType;
+        string constructionStatus;
+        int256 latitude;
+        int256 longitude;
+    }
 
-        require(bytes(parcelNumber).length > 0, "Parcel number is required");
-
-        require(!properties[propertyId].exists, "Property already exists");
+    function registerProperty(PropertyInput calldata input) external {
+        require(bytes(input.propertyId).length > 0, "Property ID is required");
 
         require(
-            bytes(propertyByParcelNumber[parcelNumber]).length == 0,
+            bytes(input.parcelNumber).length > 0,
+            "Parcel number is required"
+        );
+
+        require(
+            !properties[input.propertyId].exists,
+            "Property already exists"
+        );
+
+        require(
+            bytes(propertyByParcelNumber[input.parcelNumber]).length == 0,
             "Parcel number already exists"
         );
 
-        require(area > 0, "Area must be greater than zero");
+        require(input.area > 0, "Area must be greater than zero");
 
-        properties[propertyId] = Property({
-            propertyId: propertyId,
-            province: province,
-            city: city,
-            district: district,
-            parcelNumber: parcelNumber,
-            area: area,
-            buildYear: buildYear,
-            usageType: usageType,
-            constructionStatus: constructionStatus,
-            latitude: latitude,
-            longitude: longitude,
+        properties[input.propertyId] = Property({
+            propertyId: input.propertyId,
+            province: input.province,
+            city: input.city,
+            district: input.district,
+            parcelNumber: input.parcelNumber,
+            area: input.area,
+            buildYear: input.buildYear,
+            usageType: input.usageType,
+            constructionStatus: input.constructionStatus,
+            latitude: input.latitude,
+            longitude: input.longitude,
             status: PropertyStatus.Pending,
             exists: true
         });
 
-        propertyByParcelNumber[parcelNumber] = propertyId;
+        propertyByParcelNumber[input.parcelNumber] = input.propertyId;
 
-        propertyIds.push(propertyId);
+        propertyIds.push(input.propertyId);
 
         propertyCounter++;
 
-        emit PropertyRegistered(propertyId);
+        emit PropertyRegistered(input.propertyId);
     }
 
     function verifyProperty(string calldata propertyId) external onlyAdmin {
@@ -206,44 +214,10 @@ contract DappTronSystem {
 
     function getPropertyData(
         string calldata propertyId
-    )
-        external
-        view
-        returns (
-            string memory,
-            string memory,
-            string memory,
-            string memory,
-            string memory,
-            uint256,
-            uint16,
-            string memory,
-            string memory,
-            int256,
-            int256,
-            PropertyStatus,
-            bool
-        )
-    {
+    ) external view returns (Property memory) {
         require(properties[propertyId].exists, "Property not found");
 
-        Property memory p = properties[propertyId];
-
-        return (
-            p.propertyId,
-            p.province,
-            p.city,
-            p.district,
-            p.parcelNumber,
-            p.area,
-            p.buildYear,
-            p.usageType,
-            p.constructionStatus,
-            p.latitude,
-            p.longitude,
-            p.status,
-            p.exists
-        );
+        return properties[propertyId];
     }
 
     // ==========================================
@@ -302,5 +276,65 @@ contract DappTronSystem {
 
     function getPropertyIds() external view returns (string[] memory) {
         return propertyIds;
+    }
+
+    // ================= DOCUMENT MANAGEMENT =================
+
+    function registerDocument(
+        string calldata propertyId,
+        bytes32 documentHash,
+        string calldata documentURI
+    ) external onlyAdmin {
+        require(properties[propertyId].exists, "Property not found");
+        require(documentHash != bytes32(0), "Invalid hash");
+
+        propertyDocuments[propertyId].push(
+            Document({
+                propertyId: propertyId,
+                documentHash: documentHash,
+                documentURI: documentURI,
+                issueDate: block.timestamp,
+                status: DocumentStatus.Valid
+            })
+        );
+
+        emit DocumentRegistered(propertyId, documentHash);
+    }
+
+    function getDocuments(
+        string calldata propertyId
+    ) external view returns (Document[] memory) {
+        require(properties[propertyId].exists, "Property not found");
+        return propertyDocuments[propertyId];
+    }
+
+    function revokeDocument(
+        string calldata propertyId,
+        uint256 index
+    ) external onlyAdmin {
+        require(
+            index < propertyDocuments[propertyId].length,
+            "Document not found"
+        );
+
+        propertyDocuments[propertyId][index].status = DocumentStatus.Revoked;
+
+        emit DocumentRevoked(
+            propertyId,
+            propertyDocuments[propertyId][index].documentHash
+        );
+    }
+
+    function changeAdmin(address newAdmin) external onlyAdmin {
+        require(newAdmin != address(0), "Invalid admin");
+
+        address oldAdmin = admin;
+        admin = newAdmin;
+
+        emit AdminChanged(oldAdmin, newAdmin);
+    }
+
+    function getAdmin() external view returns (address) {
+        return admin;
     }
 }
