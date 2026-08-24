@@ -110,6 +110,18 @@ contract DappTronSystem {
 
     event TransferApproved(uint256 transferId);
 
+    event TransferRejected(uint256 transferId);
+
+    event TransferExpired(uint256 transferId);
+
+    event TransferCompleted(
+        uint256 transferId,
+        string propertyId,
+        address seller,
+        address buyer,
+        uint8 transferredShare
+    );
+
     event AdminChanged(address oldAdmin, address newAdmin);
 
     event OwnerAdded(string propertyId, address walletAddress, uint8 share);
@@ -323,6 +335,233 @@ contract DappTronSystem {
             propertyId,
             propertyDocuments[propertyId][index].documentHash
         );
+    }
+
+    // ================= TRANSFER MANAGEMENT =================
+
+    function createTransferRequest(
+        string calldata propertyId,
+        address buyer,
+        uint8 transferredShare
+    ) external {
+        require(properties[propertyId].exists, "Property not found");
+        require(buyer != address(0), "Invalid buyer");
+        require(buyer != msg.sender, "Buyer cannot be seller");
+        require(transferredShare > 0, "Invalid share");
+
+        uint256 sellerIndex = type(uint256).max;
+
+        for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
+            if (propertyOwners[propertyId][i].walletAddress == msg.sender) {
+                sellerIndex = i;
+                break;
+            }
+        }
+
+        require(sellerIndex != type(uint256).max, "Seller is not owner");
+
+        require(
+            propertyOwners[propertyId][sellerIndex].share >= transferredShare,
+            "Insufficient ownership share"
+        );
+
+        transferCounter++;
+
+        uint256 expireAt = block.timestamp + 1 days;
+
+        transferRequests[transferCounter] = TransferRequest({
+            transferId: transferCounter,
+            propertyId: propertyId,
+            seller: msg.sender,
+            buyer: buyer,
+            transferredShare: transferredShare,
+            buyerApproved: false,
+            adminApproved: false,
+            timestamp: block.timestamp,
+            expireAt: expireAt,
+            status: TransferStatus.PendingBuyer
+        });
+
+        emit TransferRequested(transferCounter);
+    }
+
+    function getTransferRequest(
+        uint256 transferId
+    ) external view returns (TransferRequest memory) {
+        require(
+            transferId > 0 && transferId <= transferCounter,
+            "Transfer not found"
+        );
+
+        return transferRequests[transferId];
+    }
+
+    function approveTransferByBuyer(uint256 transferId) external {
+        TransferRequest storage request = transferRequests[transferId];
+
+        require(request.transferId != 0, "Transfer not found");
+
+        require(
+            request.status == TransferStatus.PendingBuyer,
+            "Invalid transfer status"
+        );
+
+        require(msg.sender == request.buyer, "Only buyer can approve");
+
+        require(block.timestamp <= request.expireAt, "Transfer expired");
+
+        request.buyerApproved = true;
+        request.status = TransferStatus.PendingAdmin;
+    }
+
+    function approveTransferByAdmin(uint256 transferId) external onlyAdmin {
+        TransferRequest storage request = transferRequests[transferId];
+
+        require(request.transferId != 0, "Transfer not found");
+
+        require(
+            request.status == TransferStatus.PendingAdmin,
+            "Invalid transfer status"
+        );
+
+        require(block.timestamp <= request.expireAt, "Transfer expired");
+
+        request.adminApproved = true;
+
+        _completeTransfer(transferId);
+    }
+
+    function rejectTransfer(uint256 transferId) external {
+        TransferRequest storage request = transferRequests[transferId];
+
+        require(request.transferId != 0, "Transfer not found");
+
+        require(
+            request.status == TransferStatus.PendingBuyer ||
+                request.status == TransferStatus.PendingAdmin,
+            "Cannot reject transfer"
+        );
+
+        require(
+            msg.sender == request.buyer || msg.sender == admin,
+            "Not authorized"
+        );
+
+        request.status = TransferStatus.Rejected;
+
+        emit TransferRejected(transferId);
+    }
+
+    function expireTransfer(uint256 transferId) external {
+        TransferRequest storage request = transferRequests[transferId];
+
+        require(request.transferId != 0, "Transfer not found");
+
+        require(
+            request.status == TransferStatus.PendingBuyer ||
+                request.status == TransferStatus.PendingAdmin,
+            "Cannot expire transfer"
+        );
+
+        require(block.timestamp > request.expireAt, "Transfer not expired");
+
+        request.status = TransferStatus.Expired;
+
+        emit TransferExpired(transferId);
+    }
+
+    function _completeTransfer(uint256 transferId) internal {
+        TransferRequest storage request = transferRequests[transferId];
+
+        require(
+            request.buyerApproved && request.adminApproved,
+            "Approvals incomplete"
+        );
+
+        uint256 sellerIndex = type(uint256).max;
+        uint256 buyerIndex = type(uint256).max;
+
+        for (
+            uint256 i = 0;
+            i < propertyOwners[request.propertyId].length;
+            i++
+        ) {
+            if (
+                propertyOwners[request.propertyId][i].walletAddress ==
+                request.seller
+            ) {
+                sellerIndex = i;
+            }
+
+            if (
+                propertyOwners[request.propertyId][i].walletAddress ==
+                request.buyer
+            ) {
+                buyerIndex = i;
+            }
+        }
+
+        require(sellerIndex != type(uint256).max, "Seller is not owner");
+
+        require(
+            propertyOwners[request.propertyId][sellerIndex].share >=
+                request.transferredShare,
+            "Insufficient seller share"
+        );
+
+        propertyOwners[request.propertyId][sellerIndex].share -= request
+            .transferredShare;
+
+        if (buyerIndex != type(uint256).max) {
+            require(
+                propertyOwners[request.propertyId][buyerIndex].share +
+                    request.transferredShare <=
+                    100,
+                "Buyer share exceeds 100"
+            );
+
+            propertyOwners[request.propertyId][buyerIndex].share += request
+                .transferredShare;
+        } else {
+            propertyOwners[request.propertyId].push(
+                Ownership({
+                    walletAddress: request.buyer,
+                    nationalIdHash: bytes32(0),
+                    share: request.transferredShare
+                })
+            );
+        }
+
+        request.status = TransferStatus.Approved;
+
+        transferHistories[request.propertyId].push(
+            TransferHistory({
+                transferId: request.transferId,
+                propertyId: request.propertyId,
+                seller: request.seller,
+                buyer: request.buyer,
+                transferredShare: request.transferredShare,
+                timestamp: block.timestamp
+            })
+        );
+
+        emit TransferApproved(transferId);
+
+        emit TransferCompleted(
+            transferId,
+            request.propertyId,
+            request.seller,
+            request.buyer,
+            request.transferredShare
+        );
+    }
+
+    function getTransferHistory(
+        string calldata propertyId
+    ) external view returns (TransferHistory[] memory) {
+        require(properties[propertyId].exists, "Property not found");
+
+        return transferHistories[propertyId];
     }
 
     function changeAdmin(address newAdmin) external onlyAdmin {
