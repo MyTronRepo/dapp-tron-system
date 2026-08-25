@@ -149,49 +149,55 @@ contract DappTronSystem {
         int256 longitude;
     }
 
-    function registerProperty(PropertyInput calldata input) external {
-        require(bytes(input.propertyId).length > 0, "Property ID is required");
+    function registerProperty(
+        string calldata propertyId,
+        string calldata province,
+        string calldata city,
+        string calldata district,
+        string calldata parcelNumber,
+        uint256 area,
+        uint16 buildYear,
+        string calldata usageType,
+        string calldata constructionStatus,
+        int256 latitude,
+        int256 longitude
+    ) external {
+        require(bytes(propertyId).length > 0, "Property ID is required");
+
+        require(bytes(parcelNumber).length > 0, "Parcel number is required");
+
+        require(!properties[propertyId].exists, "Property already exists");
 
         require(
-            bytes(input.parcelNumber).length > 0,
-            "Parcel number is required"
-        );
-
-        require(
-            !properties[input.propertyId].exists,
-            "Property already exists"
-        );
-
-        require(
-            bytes(propertyByParcelNumber[input.parcelNumber]).length == 0,
+            bytes(propertyByParcelNumber[parcelNumber]).length == 0,
             "Parcel number already exists"
         );
 
-        require(input.area > 0, "Area must be greater than zero");
+        require(area > 0, "Area must be greater than zero");
 
-        properties[input.propertyId] = Property({
-            propertyId: input.propertyId,
-            province: input.province,
-            city: input.city,
-            district: input.district,
-            parcelNumber: input.parcelNumber,
-            area: input.area,
-            buildYear: input.buildYear,
-            usageType: input.usageType,
-            constructionStatus: input.constructionStatus,
-            latitude: input.latitude,
-            longitude: input.longitude,
+        properties[propertyId] = Property({
+            propertyId: propertyId,
+            province: province,
+            city: city,
+            district: district,
+            parcelNumber: parcelNumber,
+            area: area,
+            buildYear: buildYear,
+            usageType: usageType,
+            constructionStatus: constructionStatus,
+            latitude: latitude,
+            longitude: longitude,
             status: PropertyStatus.Pending,
             exists: true
         });
 
-        propertyByParcelNumber[input.parcelNumber] = input.propertyId;
+        propertyByParcelNumber[parcelNumber] = propertyId;
 
-        propertyIds.push(input.propertyId);
+        propertyIds.push(propertyId);
 
         propertyCounter++;
 
-        emit PropertyRegistered(input.propertyId);
+        emit PropertyRegistered(propertyId);
     }
 
     function verifyProperty(string calldata propertyId) external onlyAdmin {
@@ -224,12 +230,44 @@ contract DappTronSystem {
         return properties[propertyId];
     }
 
-    function getPropertyData(
+    function getPropertyBasic(
         string calldata propertyId
-    ) external view returns (Property memory) {
+    )
+        external
+        view
+        returns (
+            string memory,
+            string memory,
+            string memory,
+            string memory,
+            string memory
+        )
+    {
         require(properties[propertyId].exists, "Property not found");
 
-        return properties[propertyId];
+        Property storage p = properties[propertyId];
+
+        return (p.propertyId, p.province, p.city, p.district, p.parcelNumber);
+    }
+
+    function getPropertyDetails(
+        string calldata propertyId
+    ) external view returns (uint256, uint16, string memory, string memory) {
+        require(properties[propertyId].exists, "Property not found");
+
+        Property storage p = properties[propertyId];
+
+        return (p.area, p.buildYear, p.usageType, p.constructionStatus);
+    }
+
+    function getPropertyLocation(
+        string calldata propertyId
+    ) external view returns (int256, int256, PropertyStatus, bool) {
+        require(properties[propertyId].exists, "Property not found");
+
+        Property storage p = properties[propertyId];
+
+        return (p.latitude, p.longitude, p.status, p.exists);
     }
 
     // ==========================================

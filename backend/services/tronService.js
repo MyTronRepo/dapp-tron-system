@@ -2,10 +2,29 @@ const dns = require("dns");
 
 dns.setDefaultResultOrder("ipv4first");
 
+const originalLookup = dns.lookup;
+
+dns.lookup = function (hostname, options, callback) {
+    if (hostname === "nile.trongrid.io") {
+        if (typeof options === "function") {
+            return options(null, "52.33.11.204", 4);
+        }
+
+        if (typeof callback === "function") {
+            return callback(null, "52.33.11.204", 4);
+        }
+    }
+
+    return originalLookup.call(dns, hostname, options, callback);
+};
+
 require("dotenv").config();
 
 const TronWeb = require("tronweb");
 
+
+const contractArtifact =
+    require("../../tron-deploy/build/contracts/DappTronSystem.json");
 
 const tronWeb = new TronWeb({
 
@@ -69,59 +88,34 @@ const registerPropertyOnBlockchain = async ({
 
 
 
-        const contract =
-            await tronWeb
-            .contract()
-            .at(process.env.CONTRACT_ADDRESS);
+     const contract = tronWeb.contract(
+    contractArtifact.abi,
+    process.env.CONTRACT_ADDRESS
+);
 
 
 
-        const tx =
-            await contract
-            .registerProperty(
+const tx = await contract
+    .registerProperty([
+        propertyId,
+        province,
+        city,
+        district,
+        parcelNumber,
+        Number(area),
+        Number(buildYear),
+        usageType,
+        constructionStatus,
+        Math.round(Number(latitude) * 1000000),
+        Math.round(Number(longitude) * 1000000)
+    ])
+    .send({
+        feeLimit: 100000000
+    });
 
-                propertyId,
+console.log("PROPERTY REGISTERED TX:", tx);
 
-                province,
-
-                city,
-
-                district,
-
-                parcelNumber,
-
-                Number(area),
-
-                Number(buildYear),
-
-                usageType,
-
-                constructionStatus,
-
-                Math.round(
-                    Number(latitude) * 1000000
-                ),
-
-                Math.round(
-                    Number(longitude) * 1000000
-                )
-
-            )
-            .send({
-
-                feeLimit: 100000000
-
-            });
-
-
-
-        console.log(
-            "PROPERTY REGISTERED TX:",
-            tx
-        );
-
-
-        return tx;
+return tx;
 
 
 
@@ -146,54 +140,60 @@ const registerPropertyOnBlockchain = async ({
 
 // GET PROPERTY FROM BLOCKCHAIN
 
-const getPropertyFromBlockchain = async(propertyId)=>{
-
-    try{
-
-        const contract =
-            await tronWeb
+const getPropertyFromBlockchain = async (propertyId) => {
+    try {
+        const contract = await tronWeb
             .contract()
             .at(process.env.CONTRACT_ADDRESS);
 
-
-        const result =
-            await contract
-            .getPropertyData(propertyId)
+        const result = await contract
+            .getProperty(propertyId)
             .call();
 
-
         return {
+            propertyId: result.propertyId ?? result[0],
 
-            propertyId: result[0],
+            province: result.province ?? result[1],
 
-            province: result[1],
+            city: result.city ?? result[2],
 
-            city: result[2],
+            district: result.district ?? result[3],
 
-            district: result[3],
+            parcelNumber: result.parcelNumber ?? result[4],
 
-            parcelNumber: result[4],
+            area: Number(
+                (result.area ?? result[5]).toString()
+            ),
 
-            area: Number(result[5]),
+            buildYear: Number(
+                (result.buildYear ?? result[6]).toString()
+            ),
 
-            buildYear: Number(result[6]),
+            usageType:
+                result.usageType ?? result[7]?.toString(),
 
-            usageType: result[7],
+            constructionStatus:
+                result.constructionStatus ?? result[8]?.toString(),
 
-            constructionStatus: result[8],
+            latitude:
+                Number(
+                    (result.latitude ?? result[9]).toString()
+                ) / 1000000,
 
-            latitude: Number(result[9]) / 1000000,
+            longitude:
+                Number(
+                    (result.longitude ?? result[10]).toString()
+                ) / 1000000,
 
-            longitude: Number(result[10]) / 1000000,
+            status: Number(
+                (result.status ?? result[11]).toString()
+            ),
 
-            status: Number(result[11]),
-
-            exists: result[12]
-
+            exists:
+                result.exists ?? result[12]
         };
 
-
-    }catch(error){
+    } catch (error) {
 
         console.log(
             "BLOCKCHAIN READ ERROR:",
@@ -201,14 +201,8 @@ const getPropertyFromBlockchain = async(propertyId)=>{
         );
 
         throw error;
-
     }
-
 };
-
-
-
-
 
 module.exports = {
 
