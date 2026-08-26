@@ -142,58 +142,81 @@ return tx;
 
 const getPropertyFromBlockchain = async (propertyId) => {
     try {
+
         const contract = await tronWeb
             .contract()
             .at(process.env.CONTRACT_ADDRESS);
 
-        const result = await contract
-            .getProperty(propertyId)
+
+        const basic = await contract
+            .getPropertyBasic(propertyId)
             .call();
 
+
+        const details = await contract
+            .getPropertyDetails(propertyId)
+            .call();
+
+
+        const location = await contract
+            .getPropertyLocation(propertyId)
+            .call();
+
+
+
         return {
-            propertyId: result.propertyId ?? result[0],
 
-            province: result.province ?? result[1],
+            propertyId: basic[0],
 
-            city: result.city ?? result[2],
+            province: basic[1],
 
-            district: result.district ?? result[3],
+            city: basic[2],
 
-            parcelNumber: result.parcelNumber ?? result[4],
+            district: basic[3],
+
+            parcelNumber: basic[4],
+
 
             area: Number(
-                (result.area ?? result[5]).toString()
+                details[0].toString()
             ),
 
             buildYear: Number(
-                (result.buildYear ?? result[6]).toString()
+                details[1]
             ),
 
             usageType:
-                result.usageType ?? result[7]?.toString(),
+                details[2],
 
             constructionStatus:
-                result.constructionStatus ?? result[8]?.toString(),
+                details[3],
+
 
             latitude:
                 Number(
-                    (result.latitude ?? result[9]).toString()
+                    location[0].toString()
                 ) / 1000000,
+
 
             longitude:
                 Number(
-                    (result.longitude ?? result[10]).toString()
+                    location[1].toString()
                 ) / 1000000,
 
-            status: Number(
-                (result.status ?? result[11]).toString()
-            ),
+
+            status:
+                Number(
+                    location[2]
+                ),
+
 
             exists:
-                result.exists ?? result[12]
+                location[3]
+
         };
 
-    } catch (error) {
+
+    } catch(error){
 
         console.log(
             "BLOCKCHAIN READ ERROR:",

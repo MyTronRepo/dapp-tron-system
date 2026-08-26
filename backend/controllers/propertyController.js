@@ -380,15 +380,21 @@ const getPropertyById = async(req,res)=>{
 
                 owners,
 
-                blockchain:{
+               blockchain:{
 
-                    verified:
-                        blockchainVerified,
+    verified:
+        blockchainVerified,
 
-                    data:
-                        blockchainData
+    data:
+        blockchainData,
 
-                }
+    contractAddress:
+        process.env.CONTRACT_ADDRESS,
+
+    transactionHash:
+        property.blockchainTxId
+
+}
 
             },
 

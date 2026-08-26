@@ -78,21 +78,27 @@ function Login() {
 
       console.log("Sending:", loginData);
 
-      const response = await loginUser(loginData);
+     const response = await loginUser(loginData);
 
-      console.log(
-        "Login response:",
-        JSON.stringify(
-          response.data,
-          null,
-          2
-        )
-      );
+console.log(
+  "FULL RESPONSE:",
+  response.data
+);
 
-      login(
-        response.data.data.user,
-        response.data.data.token
-      );
+
+const userFromBackend =
+  response.data.data.user;
+
+console.log(
+  "USER FROM BACKEND JSON:",
+  JSON.stringify(userFromBackend,null,2)
+);
+
+
+login(
+  userFromBackend,
+  response.data.data.token
+);
 
       navigate("/dashboard");
     } catch (error) {

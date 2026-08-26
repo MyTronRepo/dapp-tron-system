@@ -93,9 +93,22 @@ const loginUser = async (req, res) => {
 
 
 
-        const user = await User.findOne({
-            walletAddress
-        });
+      const user = await User.findOne({
+    walletAddress
+}).sort({
+    createdAt: -1
+});
+
+console.log("LOGIN RESULT:", {
+    id: user?._id,
+    walletAddress: user?.walletAddress,
+    role: user?.role,
+    fullName: user?.fullName
+});
+        console.log(
+    "LOGIN USER FROM DATABASE:",
+    user
+);
 
 
 

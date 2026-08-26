@@ -9,6 +9,7 @@ function PropertyDetails() {
 
   const [property, setProperty] = useState(null);
   const [owners, setOwners] = useState([]);
+  const [blockchain, setBlockchain] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -21,11 +22,15 @@ function PropertyDetails() {
 
         const response = await getPropertyById(propertyId);
 
+        console.log("PROPERTY RESPONSE:", response.data);
+
         setProperty(response.data.property);
         setOwners(response.data.owners);
+        setBlockchain(response.data.blockchain);
 
       } catch (err) {
 
+        console.log(err);
         setError("Failed to load property");
 
       } finally {
@@ -132,25 +137,35 @@ function PropertyDetails() {
           </p>
 
 
+
           <p>
             <strong>Blockchain Status:</strong>{" "}
             {
-              property.status === "Verified"
+              blockchain?.verified
                 ? "Registered on Blockchain"
                 : "Waiting for Blockchain Verification"
             }
           </p>
 
 
+
           <p>
             <strong>Contract Address:</strong>{" "}
-            Not Available
+            {
+              blockchain?.contractAddress ||
+              "Not Available"
+            }
           </p>
+
 
 
           <p>
             <strong>Transaction Hash:</strong>{" "}
-            Not Available
+            {
+              blockchain?.transactionHash ||
+              property.blockchainTxId ||
+              "Not Available"
+            }
           </p>
 
 
