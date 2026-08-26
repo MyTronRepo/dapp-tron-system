@@ -149,6 +149,10 @@ contract DappTronSystem {
         int256 longitude;
     }
 
+    // =========================================================
+    // PROPERTY MANAGEMENT
+    // =========================================================
+
     function registerProperty(
         string calldata propertyId,
         string calldata province,
@@ -270,9 +274,9 @@ contract DappTronSystem {
         return (p.latitude, p.longitude, p.status, p.exists);
     }
 
-    // ==========================================
-    // Ownership Management
-    // ==========================================
+    // =========================================================
+    // OWNERSHIP MANAGEMENT
+    // =========================================================
 
     function addOwner(
         string calldata propertyId,
@@ -328,7 +332,9 @@ contract DappTronSystem {
         return propertyIds;
     }
 
-    // ================= DOCUMENT MANAGEMENT =================
+    // =========================================================
+    // DOCUMENT MANAGEMENT
+    // =========================================================
 
     function registerDocument(
         string calldata propertyId,
@@ -336,6 +342,7 @@ contract DappTronSystem {
         string calldata documentURI
     ) external onlyAdmin {
         require(properties[propertyId].exists, "Property not found");
+
         require(documentHash != bytes32(0), "Invalid hash");
 
         propertyDocuments[propertyId].push(
@@ -355,6 +362,7 @@ contract DappTronSystem {
         string calldata propertyId
     ) external view returns (Document[] memory) {
         require(properties[propertyId].exists, "Property not found");
+
         return propertyDocuments[propertyId];
     }
 
@@ -375,7 +383,9 @@ contract DappTronSystem {
         );
     }
 
-    // ================= TRANSFER MANAGEMENT =================
+    // =========================================================
+    // TRANSFER MANAGEMENT
+    // =========================================================
 
     function createTransferRequest(
         string calldata propertyId,
@@ -383,8 +393,11 @@ contract DappTronSystem {
         uint8 transferredShare
     ) external {
         require(properties[propertyId].exists, "Property not found");
+
         require(buyer != address(0), "Invalid buyer");
+
         require(buyer != msg.sender, "Buyer cannot be seller");
+
         require(transferredShare > 0, "Invalid share");
 
         uint256 sellerIndex = type(uint256).max;
@@ -449,6 +462,7 @@ contract DappTronSystem {
         require(block.timestamp <= request.expireAt, "Transfer expired");
 
         request.buyerApproved = true;
+
         request.status = TransferStatus.PendingAdmin;
     }
 
@@ -508,6 +522,10 @@ contract DappTronSystem {
         emit TransferExpired(transferId);
     }
 
+    // =========================================================
+    // COMPLETE TRANSFER
+    // =========================================================
+
     function _completeTransfer(uint256 transferId) internal {
         TransferRequest storage request = transferRequests[transferId];
 
@@ -516,25 +534,33 @@ contract DappTronSystem {
             "Approvals incomplete"
         );
 
+        /*
+         * IMPORTANT FIX:
+         *
+         * request.propertyId is a string storage reference.
+         * We copy it into memory before using it in contexts
+         * that require a memory/calldata-compatible string.
+         */
+        string memory propertyId = request.propertyId;
+
+        address seller = request.seller;
+
+        address buyer = request.buyer;
+
+        uint8 transferredShare = request.transferredShare;
+
+        uint256 requestTransferId = request.transferId;
+
         uint256 sellerIndex = type(uint256).max;
+
         uint256 buyerIndex = type(uint256).max;
 
-        for (
-            uint256 i = 0;
-            i < propertyOwners[request.propertyId].length;
-            i++
-        ) {
-            if (
-                propertyOwners[request.propertyId][i].walletAddress ==
-                request.seller
-            ) {
+        for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
+            if (propertyOwners[propertyId][i].walletAddress == seller) {
                 sellerIndex = i;
             }
 
-            if (
-                propertyOwners[request.propertyId][i].walletAddress ==
-                request.buyer
-            ) {
+            if (propertyOwners[propertyId][i].walletAddress == buyer) {
                 buyerIndex = i;
             }
         }
@@ -542,43 +568,40 @@ contract DappTronSystem {
         require(sellerIndex != type(uint256).max, "Seller is not owner");
 
         require(
-            propertyOwners[request.propertyId][sellerIndex].share >=
-                request.transferredShare,
+            propertyOwners[propertyId][sellerIndex].share >= transferredShare,
             "Insufficient seller share"
         );
 
-        propertyOwners[request.propertyId][sellerIndex].share -= request
-            .transferredShare;
+        propertyOwners[propertyId][sellerIndex].share -= transferredShare;
 
         if (buyerIndex != type(uint256).max) {
             require(
-                propertyOwners[request.propertyId][buyerIndex].share +
-                    request.transferredShare <=
+                propertyOwners[propertyId][buyerIndex].share +
+                    transferredShare <=
                     100,
                 "Buyer share exceeds 100"
             );
 
-            propertyOwners[request.propertyId][buyerIndex].share += request
-                .transferredShare;
+            propertyOwners[propertyId][buyerIndex].share += transferredShare;
         } else {
-            propertyOwners[request.propertyId].push(
+            propertyOwners[propertyId].push(
                 Ownership({
-                    walletAddress: request.buyer,
+                    walletAddress: buyer,
                     nationalIdHash: bytes32(0),
-                    share: request.transferredShare
+                    share: transferredShare
                 })
             );
         }
 
         request.status = TransferStatus.Approved;
 
-        transferHistories[request.propertyId].push(
+        transferHistories[propertyId].push(
             TransferHistory({
-                transferId: request.transferId,
-                propertyId: request.propertyId,
-                seller: request.seller,
-                buyer: request.buyer,
-                transferredShare: request.transferredShare,
+                transferId: requestTransferId,
+                propertyId: propertyId,
+                seller: seller,
+                buyer: buyer,
+                transferredShare: transferredShare,
                 timestamp: block.timestamp
             })
         );
@@ -587,10 +610,10 @@ contract DappTronSystem {
 
         emit TransferCompleted(
             transferId,
-            request.propertyId,
-            request.seller,
-            request.buyer,
-            request.transferredShare
+            propertyId,
+            seller,
+            buyer,
+            transferredShare
         );
     }
 
@@ -602,10 +625,15 @@ contract DappTronSystem {
         return transferHistories[propertyId];
     }
 
+    // =========================================================
+    // ADMIN
+    // =========================================================
+
     function changeAdmin(address newAdmin) external onlyAdmin {
         require(newAdmin != address(0), "Invalid admin");
 
         address oldAdmin = admin;
+
         admin = newAdmin;
 
         emit AdminChanged(oldAdmin, newAdmin);

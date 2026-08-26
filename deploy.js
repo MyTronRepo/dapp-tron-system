@@ -15,7 +15,22 @@ const NILE_IP = "32.189.30.242";
 const NILE_URL = `https://${NILE_HOST}`;
 
 // =========================================================
-// FORCE IPv4 + NILE IP
+// DEPLOY CONFIG
+// =========================================================
+
+const COMPILE_OUTPUT = "./compile-output.json";
+const CONTRACT_NAME = "DappTronSystem";
+
+const DEPLOYED_ADDRESS_FILE =
+    "./deployed-contract-address.txt";
+
+const FEE_LIMIT = 1_000_000_000;
+
+const MAX_CONFIRMATION_ATTEMPTS = 40;
+const CONFIRMATION_INTERVAL = 3000;
+
+// =========================================================
+// FORCE IPv4
 // =========================================================
 
 dns.setDefaultResultOrder("ipv4first");
@@ -29,7 +44,11 @@ dns.lookup = function (hostname, options, callback) {
             options = {};
         }
 
-        return callback(null, NILE_IP, 4);
+        return callback(
+            null,
+            NILE_IP,
+            4
+        );
     }
 
     return originalLookup.call(
@@ -52,22 +71,30 @@ const httpsAgent = new https.Agent({
 });
 
 // =========================================================
-// DIRECT NILE REQUEST
+// NILE REQUEST
 // =========================================================
 
-async function nileRequest(path, data = {}, method = "post") {
+async function nileRequest(
+    path,
+    data = {},
+    method = "post"
+) {
+    const normalizedPath =
+        path.startsWith("/")
+            ? path
+            : `/${path}`;
+
     console.log(
-        `[NILE] ${method.toUpperCase()} ${path}`
+        `[NILE] ${method.toUpperCase()} ${normalizedPath}`
     );
 
-    const normalizedPath = path.startsWith("/")
-    ? path
-    : `/${path}`;
+    const response = await axios({
+        method: method.toLowerCase(),
 
-const response = await axios({
-    method: method.toLowerCase(),
+        url:
+            `https://${NILE_IP}` +
+            normalizedPath,
 
-    url: `https://${NILE_IP}${normalizedPath}`,
         data,
 
         timeout: 45000,
@@ -100,11 +127,7 @@ const response = await axios({
 }
 
 // =========================================================
-// TRONWEB
-//
-// IMPORTANT:
-// Do NOT pass custom provider objects to constructor.
-// TronWeb 5.3.5 validates the provider during construction.
+// ENV CHECK
 // =========================================================
 
 if (!process.env.PRIVATE_KEY) {
@@ -113,13 +136,26 @@ if (!process.env.PRIVATE_KEY) {
     );
 }
 
+if (
+    process.env.PRIVATE_KEY ===
+    "YOUR_MAIN_WALLET_PRIVATE_KEY"
+) {
+    throw new Error(
+        "PRIVATE_KEY still contains placeholder value."
+    );
+}
+
+// =========================================================
+// TRONWEB
+// =========================================================
+
 const tronWeb = new TronWeb({
     fullHost: NILE_URL,
     privateKey: process.env.PRIVATE_KEY
 });
 
 // =========================================================
-// PATCH TRONWEB PROVIDERS AFTER CONSTRUCTION
+// PATCH PROVIDERS
 // =========================================================
 
 function patchProvider(provider, name) {
@@ -182,6 +218,93 @@ function validBlock(block) {
     );
 }
 
+function loadCompiledContract() {
+    if (!fs.existsSync(COMPILE_OUTPUT)) {
+        throw new Error(
+            `Missing ${COMPILE_OUTPUT}. Run node compile.js first.`
+        );
+    }
+
+    const output = JSON.parse(
+        fs.readFileSync(
+            COMPILE_OUTPUT,
+            "utf8"
+        )
+    );
+
+    // -----------------------------------------------------
+    // Solidity compiler errors
+    // -----------------------------------------------------
+
+    const errors =
+        output.errors?.filter(
+            error =>
+                error.severity === "error"
+        ) || [];
+
+    if (errors.length > 0) {
+        console.error(
+            "\nSolidity compilation errors:\n"
+        );
+
+        console.error(
+            JSON.stringify(
+                errors,
+                null,
+                2
+            )
+        );
+
+        throw new Error(
+            "compile-output.json contains Solidity errors."
+        );
+    }
+
+    // -----------------------------------------------------
+    // Contract
+    // -----------------------------------------------------
+
+    const compiled =
+        output.contracts?.[
+            "DappTronSystem.sol"
+        ]?.[CONTRACT_NAME];
+
+    if (!compiled) {
+        throw new Error(
+            `Compiled contract ${CONTRACT_NAME} not found in compile-output.json.`
+        );
+    }
+
+    const abi =
+        compiled.abi;
+
+    const bytecode =
+        compiled.evm?.bytecode?.object;
+
+    if (
+        !Array.isArray(abi) ||
+        abi.length === 0
+    ) {
+        throw new Error(
+            "Compiled ABI is missing or empty."
+        );
+    }
+
+    if (
+        typeof bytecode !== "string" ||
+        bytecode.length === 0
+    ) {
+        throw new Error(
+            "Compiled bytecode is missing or empty."
+        );
+    }
+
+    return {
+        abi,
+        bytecode
+    };
+}
+
 async function getBlockWithRetry(
     maxAttempts = 5
 ) {
@@ -227,6 +350,79 @@ async function getBlockWithRetry(
     throw lastError;
 }
 
+async function waitForConfirmation(
+    txid,
+    maxAttempts = MAX_CONFIRMATION_ATTEMPTS
+) {
+    for (
+        let attempt = 1;
+        attempt <= maxAttempts;
+        attempt++
+    ) {
+        try {
+            const info =
+                await tronWeb.trx.getTransactionInfo(
+                    txid
+                );
+
+            if (
+                info &&
+                info.receipt &&
+                info.receipt.result
+            ) {
+                return info;
+            }
+
+        } catch (error) {
+            console.log(
+                `Confirmation request failed: ${
+                    error?.message || error
+                }`
+            );
+        }
+
+        console.log(
+            `Waiting confirmation... ${attempt}/${maxAttempts}`
+        );
+
+        await sleep(
+            CONFIRMATION_INTERVAL
+        );
+    }
+
+    throw new Error(
+        "Transaction confirmation timeout."
+    );
+}
+
+function extractContractAddress(
+    txInfo
+) {
+    if (
+        txInfo &&
+        txInfo.contractResult &&
+        txInfo.contractResult.length > 0
+    ) {
+        // Contract creation transactions
+        // normally expose the deployed address
+        // through contract_address in the transaction info.
+    }
+
+    if (
+        txInfo?.contract_address
+    ) {
+        return txInfo.contract_address;
+    }
+
+    if (
+        txInfo?.contractAddress
+    ) {
+        return txInfo.contractAddress;
+    }
+
+    return null;
+}
+
 // =========================================================
 // DEPLOY
 // =========================================================
@@ -234,12 +430,15 @@ async function getBlockWithRetry(
 async function deploy() {
     try {
         console.log();
+
         console.log(
             "================================"
         );
+
         console.log(
-            "TRON NILE DEPLOY"
+            "TRON NILE DEPLOY - NEW COMPILED CONTRACT"
         );
+
         console.log(
             "================================"
         );
@@ -261,65 +460,76 @@ async function deploy() {
 
         console.log();
 
-        // -------------------------------------------------
-        // LOAD CONTRACT
-        // -------------------------------------------------
+        // =====================================================
+        // LOAD NEW COMPILED CONTRACT
+        // =====================================================
 
-        const abi = JSON.parse(
-            fs.readFileSync(
-                "contract-abi.json",
-                "utf8"
-            )
+        console.log(
+            "Loading compile-output.json..."
         );
 
-        const bytecode =
-            fs.readFileSync(
-                "contract-bytecode.txt",
-                "utf8"
-            ).trim();
+        const {
+            abi,
+            bytecode
+        } = loadCompiledContract();
 
-        if (!bytecode) {
-            throw new Error(
-                "contract-bytecode.txt is empty."
-            );
-        }
+        console.log(
+            "Compiled contract:",
+            CONTRACT_NAME
+        );
+
+        console.log(
+            "ABI entries:",
+            abi.length
+        );
 
         console.log(
             "Bytecode length:",
             bytecode.length
         );
 
-        // -------------------------------------------------
+        console.log();
+
+        // =====================================================
         // DEPLOYER
-        // -------------------------------------------------
+        // =====================================================
 
         const deployer =
             tronWeb.defaultAddress.base58;
 
-        console.log();
+        if (!deployer) {
+            throw new Error(
+                "Unable to determine deployer address."
+            );
+        }
+
         console.log(
             "Deployer:",
             deployer
         );
 
-        // -------------------------------------------------
-        // CHECK BLOCK
-        // -------------------------------------------------
-
-        console.log();
+        // =====================================================
+        // CHECK NILE
+        // =====================================================
 
         const block =
             await getBlockWithRetry(5);
 
+        console.log();
+
         console.log(
-            "Nile connection OK - Block:",
+            "Nile connection OK."
+        );
+
+        console.log(
+            "Nile block:",
             block.block_header
                 .raw_data.number
         );
 
-        // -------------------------------------------------
+        // =====================================================
         // BALANCE
-        // -------------------------------------------------
+        // =====================================================
 
         const balance =
             await tronWeb.trx.getBalance(
@@ -327,7 +537,7 @@ async function deploy() {
             );
 
         console.log(
-            "Balance:",
+            "Deployer balance:",
             balance / 1e6,
             "TRX"
         );
@@ -338,11 +548,12 @@ async function deploy() {
             );
         }
 
-        // -------------------------------------------------
-        // BUILD TRANSACTION
-        // -------------------------------------------------
+        // =====================================================
+        // BUILD DEPLOYMENT TRANSACTION
+        // =====================================================
 
         console.log();
+
         console.log(
             "Building deployment transaction..."
         );
@@ -355,7 +566,7 @@ async function deploy() {
                         bytecode,
 
                         feeLimit:
-                            1_000_000_000,
+                            FEE_LIMIT,
 
                         callValue: 0,
 
@@ -377,23 +588,8 @@ async function deploy() {
             );
         }
 
-        // -------------------------------------------------
-        // TRANSACTION INFO
-        // -------------------------------------------------
-
-        const txTimestamp =
-            Number(
-                transaction.raw_data.timestamp
-            );
-
-        const expiration =
-            Number(
-                transaction.raw_data.expiration
-            );
-
-        console.log();
         console.log(
-            "Transaction created."
+            "Deployment transaction created."
         );
 
         console.log(
@@ -401,47 +597,12 @@ async function deploy() {
             transaction.txID
         );
 
-        console.log(
-            "Created:",
-            new Date(
-                txTimestamp
-            ).toISOString()
-        );
-
-        console.log(
-            "Expiration:",
-            new Date(
-                expiration
-            ).toISOString()
-        );
-
-        console.log(
-            "Remaining:",
-            Math.max(
-                0,
-                Math.floor(
-                    (
-                        expiration -
-                        Date.now()
-                    ) / 1000
-                )
-            ),
-            "seconds"
-        );
-
-        // -------------------------------------------------
-        // SIGN IMMEDIATELY
-        // -------------------------------------------------
-
-        if (
-            Date.now() >= expiration
-        ) {
-            throw new Error(
-                "Transaction expired before signing."
-            );
-        }
+        // =====================================================
+        // SIGN
+        // =====================================================
 
         console.log();
+
         console.log(
             "Signing transaction..."
         );
@@ -456,31 +617,12 @@ async function deploy() {
             "Transaction signed."
         );
 
-        // -------------------------------------------------
-        // BROADCAST IMMEDIATELY
-        // -------------------------------------------------
-
-        const remaining =
-            expiration - Date.now();
-
-        console.log(
-            "Remaining before broadcast:",
-            Math.floor(
-                Math.max(
-                    0,
-                    remaining
-                ) / 1000
-            ),
-            "seconds"
-        );
-
-        if (remaining <= 0) {
-            throw new Error(
-                "Transaction expired before broadcast."
-            );
-        }
+        // =====================================================
+        // BROADCAST
+        // =====================================================
 
         console.log();
+
         console.log(
             "Broadcasting transaction..."
         );
@@ -493,7 +635,10 @@ async function deploy() {
         console.log();
 
         console.log(
-            "Broadcast result:",
+            "Broadcast result:"
+        );
+
+        console.log(
             JSON.stringify(
                 result,
                 null,
@@ -512,46 +657,186 @@ async function deploy() {
             );
         }
 
-        // -------------------------------------------------
-        // SUCCESS
-        // -------------------------------------------------
+        const txid =
+            result.txid ||
+            transaction.txID;
 
         console.log();
+
         console.log(
             "================================"
         );
+
         console.log(
             "DEPLOY BROADCAST SUCCESS"
         );
+
         console.log(
             "================================"
         );
 
         console.log(
             "Transaction ID:",
-            transaction.txID
+            txid
         );
+
+        // =====================================================
+        // WAIT FOR CONFIRMATION
+        // =====================================================
 
         console.log();
 
         console.log(
-            "The transaction was accepted by Nile."
+            "Waiting for deployment confirmation..."
+        );
+
+        const txInfo =
+            await waitForConfirmation(
+                txid
+            );
+
+        console.log();
+
+        console.log(
+            "Transaction result:",
+            txInfo?.receipt?.result
+        );
+
+        if (
+            txInfo?.receipt?.result !==
+            "SUCCESS"
+        ) {
+            console.error();
+
+            console.error(
+                "================================"
+            );
+
+            console.error(
+                "DEPLOY FAILED"
+            );
+
+            console.error(
+                "================================"
+            );
+
+            console.error(
+                JSON.stringify(
+                    txInfo,
+                    null,
+                    2
+                )
+            );
+
+            process.exit(1);
+        }
+
+        // =====================================================
+        // CONTRACT ADDRESS
+        // =====================================================
+
+        const contractAddress =
+            extractContractAddress(
+                txInfo
+            );
+
+        console.log();
+
+        console.log(
+            "Deployment confirmed."
+        );
+
+        if (contractAddress) {
+            console.log();
+            console.log(
+                "================================"
+            );
+            console.log(
+                "NEW CONTRACT DEPLOYED"
+            );
+            console.log(
+                "================================"
+            );
+
+            console.log(
+                "Contract address:",
+                contractAddress
+            );
+
+            fs.writeFileSync(
+                DEPLOYED_ADDRESS_FILE,
+                contractAddress + "\n",
+                "utf8"
+            );
+
+            console.log();
+            console.log(
+                "Saved to:",
+                DEPLOYED_ADDRESS_FILE
+            );
+        } else {
+            console.log();
+
+            console.log(
+                "Deployment succeeded, but contract address was not present in transaction info."
+            );
+
+            console.log(
+                "Transaction info:"
+            );
+
+            console.log(
+                JSON.stringify(
+                    txInfo,
+                    null,
+                    2
+                )
+            );
+        }
+
+        // =====================================================
+        // FINAL
+        // =====================================================
+
+        console.log();
+
+        console.log(
+            "================================"
         );
 
         console.log(
-            "We will retrieve the contract address next."
+            "DEPLOY COMPLETE"
         );
+
+        console.log(
+            "================================"
+        );
+
+        console.log(
+            "TX ID:",
+            txid
+        );
+
+        if (contractAddress) {
+            console.log(
+                "Contract:",
+                contractAddress
+            );
+        }
 
         console.log();
 
     } catch (error) {
         console.error();
+
         console.error(
             "================================"
         );
+
         console.error(
             "DEPLOY ERROR"
         );
+
         console.error(
             "================================"
         );
