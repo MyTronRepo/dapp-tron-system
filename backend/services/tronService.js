@@ -143,10 +143,10 @@ return tx;
 const getPropertyFromBlockchain = async (propertyId) => {
     try {
 
-        const contract = await tronWeb
-            .contract()
-            .at(process.env.CONTRACT_ADDRESS);
-
+        const contract = tronWeb.contract(
+    contractArtifact.abi,
+    process.env.CONTRACT_ADDRESS
+);
 
         const basic = await contract
             .getPropertyBasic(propertyId)

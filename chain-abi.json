@@ -1,0 +1,563 @@
+{
+  "entrys": [
+    {
+      "type": "Constructor",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "AdminChanged",
+      "inputs": [
+        {
+          "name": "oldAdmin",
+          "type": "address"
+        },
+        {
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "DocumentRegistered",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "documentHash",
+          "type": "bytes32"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "DocumentRevoked",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "documentHash",
+          "type": "bytes32"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "OwnerAdded",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "walletAddress",
+          "type": "address"
+        },
+        {
+          "name": "share",
+          "type": "uint8"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "PropertyRegistered",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "PropertyRejected",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "PropertyVerified",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "TransferApproved",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "TransferCompleted",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        },
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "seller",
+          "type": "address"
+        },
+        {
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "name": "transferredShare",
+          "type": "uint8"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "TransferExpired",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "TransferRejected",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "TransferRequested",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Event"
+    },
+    {
+      "name": "addOwner",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "walletAddress",
+          "type": "address"
+        },
+        {
+          "name": "nationalIdHash",
+          "type": "bytes32"
+        },
+        {
+          "name": "share",
+          "type": "uint8"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "admin",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "approveTransferByAdmin",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "approveTransferByBuyer",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "changeAdmin",
+      "inputs": [
+        {
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "createTransferRequest",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "name": "transferredShare",
+          "type": "uint8"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "expireTransfer",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "getAdmin",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getDocuments",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getOwners",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getProperty",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getPropertyBasic",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getPropertyDetails",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256"
+        },
+        {
+          "type": "uint16"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getPropertyIdByParcel",
+      "inputs": [
+        {
+          "name": "parcelNumber",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getPropertyIds",
+      "outputs": [
+        {
+          "type": "string[]"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getPropertyLocation",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "int256"
+        },
+        {
+          "type": "int256"
+        },
+        {
+          "type": "uint8"
+        },
+        {
+          "type": "bool"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getTransferHistory",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "getTransferRequest",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "propertyCounter",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "registerDocument",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "documentHash",
+          "type": "bytes32"
+        },
+        {
+          "name": "documentURI",
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "registerProperty",
+      "inputs": [
+        {
+          "name": "input",
+          "type": "tuple"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "rejectProperty",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "rejectTransfer",
+      "inputs": [
+        {
+          "name": "transferId",
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "revokeDocument",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        },
+        {
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "suspendProperty",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    },
+    {
+      "name": "transferCounter",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "View"
+    },
+    {
+      "name": "verifyProperty",
+      "inputs": [
+        {
+          "name": "propertyId",
+          "type": "string"
+        }
+      ],
+      "type": "Function",
+      "stateMutability": "Nonpayable"
+    }
+  ]
+}
