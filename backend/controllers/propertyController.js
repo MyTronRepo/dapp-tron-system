@@ -12,6 +12,7 @@ const {
 
 const {
     registerPropertyOnBlockchain,
+    updatePropertyOnBlockchain,
     getPropertyFromBlockchain
 } = require("../services/tronService");
 
@@ -479,7 +480,185 @@ const searchProperties = async(req,res)=>{
 
 
 
+// UPDATE PROPERTY
 
+const updateProperty = async (req, res) => {
+
+    try {
+
+        const {
+            province,
+            city,
+            district,
+            parcelNumber,
+            area,
+            buildYear,
+            usageType,
+            constructionStatus,
+            latitude,
+            longitude
+        } = req.body;
+
+
+        const propertyId =
+            req.params.propertyId;
+
+
+        const property =
+            await Property.findOne({
+                propertyId
+            });
+
+
+        if (!property) {
+
+            return errorResponse(
+                res,
+                "Property not found",
+                404
+            );
+
+        }
+
+
+        let blockchainTxId = null;
+
+
+        try {
+
+            blockchainTxId =
+                await updatePropertyOnBlockchain({
+
+                    propertyId,
+
+                    province,
+
+                    city,
+
+                    district,
+
+                    parcelNumber,
+
+                    area,
+
+                    buildYear,
+
+                    usageType,
+
+                    constructionStatus,
+
+                    latitude,
+
+                    longitude
+
+                });
+
+        }
+        catch (error) {
+
+            console.log(
+                "Blockchain property update failed:",
+                error.message
+            );
+
+            return errorResponse(
+                res,
+                "Blockchain property update failed",
+                500
+            );
+
+        }
+
+
+        const updatedProperty =
+            await Property.findOneAndUpdate(
+
+                {
+                    propertyId
+                },
+
+                {
+                    province,
+                    city,
+                    district,
+                    parcelNumber,
+                    area,
+                    buildYear,
+                    usageType,
+                    constructionStatus,
+                    latitude,
+                    longitude,
+
+                    blockchainTxId
+                },
+
+                {
+                    new: true
+                }
+
+            );
+
+
+        await createAuditLog({
+
+            action:
+                "UPDATE_PROPERTY",
+
+            entity:
+                "Property",
+
+            entityId:
+                propertyId,
+
+            performedBy:
+                req.user.walletAddress,
+
+            role:
+                req.user.role,
+
+            ipAddress:
+                req.ip,
+
+            details: {
+
+                parcelNumber,
+
+                city,
+
+                province
+
+            }
+
+        });
+
+
+        return successResponse(
+
+            res,
+
+            updatedProperty,
+
+            "Property updated successfully"
+
+        );
+
+
+    }
+    catch (error) {
+
+        return errorResponse(
+
+            res,
+
+            error.message,
+
+            500
+
+        );
+
+    }
+
+};
 
 
 // VERIFY / REJECT PROPERTY
@@ -732,12 +911,13 @@ catch(error){
 
 module.exports = {
 
-
     registerProperty,
 
     getPropertyById,
 
     searchProperties,
+
+    updateProperty,
 
     updatePropertyStatus
 

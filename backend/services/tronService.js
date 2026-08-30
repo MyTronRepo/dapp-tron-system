@@ -285,6 +285,100 @@ const getPropertyFromBlockchain = async (propertyId) => {
 
 };
 
+/*
+|--------------------------------------------------------------------------
+| UPDATE PROPERTY ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const updatePropertyOnBlockchain = async ({
+    propertyId,
+    province,
+    city,
+    district,
+    parcelNumber,
+    area,
+    buildYear,
+    usageType,
+    constructionStatus,
+    latitude,
+    longitude
+}) => {
+
+    try {
+
+        console.log(
+            "UPDATING PROPERTY ON BLOCKCHAIN:",
+            propertyId
+        );
+
+        console.log(
+            "BLOCKCHAIN CONTRACT:",
+            process.env.CONTRACT_ADDRESS
+        );
+
+        console.log(
+            "TRON ADDRESS:",
+            tronWeb.defaultAddress.base58
+        );
+
+        const contract = tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const areaValue = Number(area);
+
+        const buildYearValue = Number(buildYear);
+
+        const latitudeValue =
+            Math.round(Number(latitude) * 1000000);
+
+        const longitudeValue =
+            Math.round(Number(longitude) * 1000000);
+
+    const tx = await contract
+    .updateProperty([
+        propertyId,
+        province,
+        city,
+        district,
+        parcelNumber,
+        areaValue,
+        buildYearValue,
+        usageType,
+        constructionStatus,
+        latitudeValue,
+        longitudeValue
+    ])
+    .send({
+        feeLimit: 100000000
+    });
+
+        console.log(
+            "PROPERTY UPDATED TX:",
+            tx
+        );
+
+        return tx;
+
+    } catch (error) {
+
+        console.log(
+            "BLOCKCHAIN UPDATE ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "BLOCKCHAIN UPDATE ERROR FULL:",
+            error
+        );
+
+        throw error;
+    }
+
+};
+
 // GET ALL PROPERTY IDS FROM BLOCKCHAIN
 
 const getPropertyIdsFromBlockchain = async () => {
@@ -347,6 +441,8 @@ module.exports = {
     tronWeb,
 
     registerPropertyOnBlockchain,
+
+    updatePropertyOnBlockchain,
 
     getPropertyFromBlockchain,
 

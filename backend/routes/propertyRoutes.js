@@ -3,17 +3,12 @@ const express = require("express");
 const router = express.Router();
 
 const {
-
     registerProperty,
-
     searchProperties,
-
     getPropertyById,
-
+    updateProperty,
     updatePropertyStatus
-
 } = require("../controllers/propertyController");
-
 
 const {
     authenticate,
@@ -26,9 +21,9 @@ const validate =
 
 
 const {
-    propertyRegisterValidation
+    propertyRegisterValidation,
+    propertyUpdateValidation
 } = require("../../validators/propertyValidator");
-
 
 router.post(
     "/register",
@@ -68,7 +63,23 @@ router.get(
 
 );
 
+router.patch(
 
+    "/:propertyId",
+
+    authenticate,
+
+    authorize(
+        "owner"
+    ),
+
+    propertyUpdateValidation,
+
+    validate,
+
+    updateProperty
+
+);
 
 router.patch(
 
@@ -84,6 +95,9 @@ router.patch(
 
 );
 
-
+router.use((req, res, next) => {
+    console.log("PROPERTY ROUTER HIT:", req.method, req.originalUrl);
+    next();
+});
 
 module.exports = router;
