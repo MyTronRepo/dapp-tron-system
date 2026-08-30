@@ -74,22 +74,22 @@ const registerProperty = async (req, res) => {
 
 
 
-        const exists =
-            await Property.findOne({
-                parcelNumber
-            });
+        // const exists =
+        //     await Property.findOne({
+        //         parcelNumber
+        //     });
 
 
 
-        if (exists) {
+        // if (exists) {
 
-            return errorResponse(
-                res,
-                "Property already exists",
-                409
-            );
+        //     return errorResponse(
+        //         res,
+        //         "Property already exists",
+        //         409
+        //     );
 
-        }
+        // }
 
 
 

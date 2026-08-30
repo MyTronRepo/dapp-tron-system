@@ -22,64 +22,56 @@ require("dotenv").config();
 
 const TronWeb = require("tronweb");
 
-
 const contractArtifact =
     require("../../tron-deploy/build/contracts/DappTronSystem.json");
 
-const tronWeb = new TronWeb({
 
+/*
+|--------------------------------------------------------------------------
+| TRON WEB
+|--------------------------------------------------------------------------
+*/
+
+const tronWeb = new TronWeb({
     fullNode: "https://nile.trongrid.io",
-solidityNode: "https://nile.trongrid.io",
-eventServer: "https://nile.trongrid.io",
+    solidityNode: "https://nile.trongrid.io",
+    eventServer: "https://nile.trongrid.io",
 
     privateKey: process.env.PRIVATE_KEY
-
 });
 
 
-
-// REGISTER PROPERTY ON BLOCKCHAIN
+/*
+|--------------------------------------------------------------------------
+| REGISTER PROPERTY ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
 
 const registerPropertyOnBlockchain = async ({
-
     propertyId,
-
     province,
-
     city,
-
     district,
-
     parcelNumber,
-
     area,
-
     buildYear,
-
     usageType,
-
     constructionStatus,
-
     latitude,
-
     longitude
-
 }) => {
 
-
- console.log(
-    "BLOCKCHAIN HOST:",
-    "https://nile.trongrid.io"
-);
+    console.log(
+        "BLOCKCHAIN HOST:",
+        "https://nile.trongrid.io"
+    );
 
     console.log(
         "BLOCKCHAIN CONTRACT:",
         process.env.CONTRACT_ADDRESS
     );
 
-
     try {
-
 
         console.log(
             "TRON ADDRESS:",
@@ -87,46 +79,205 @@ const registerPropertyOnBlockchain = async ({
         );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Create contract instance
+        |--------------------------------------------------------------------------
+        */
 
-     const contract = tronWeb.contract(
-    contractArtifact.abi,
-    process.env.CONTRACT_ADDRESS
-);
-
-
-
-const tx = await contract
-    .registerProperty([
-        propertyId,
-        province,
-        city,
-        district,
-        parcelNumber,
-        Number(area),
-        Number(buildYear),
-        usageType,
-        constructionStatus,
-        Math.round(Number(latitude) * 1000000),
-        Math.round(Number(longitude) * 1000000)
-    ])
-    .send({
-        feeLimit: 100000000
-    });
-
-console.log("PROPERTY REGISTERED TX:", tx);
-
-return tx;
+        const contract = tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Convert values
+        |--------------------------------------------------------------------------
+        */
 
-    } catch(error) {
+        const areaValue = Number(area);
 
+        const buildYearValue = Number(buildYear);
+
+        const latitudeValue =
+            Math.round(Number(latitude) * 1000000);
+
+        const longitudeValue =
+            Math.round(Number(longitude) * 1000000);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Register property
+        |--------------------------------------------------------------------------
+        */
+
+        const tx = await contract
+            .registerProperty(
+                propertyId,
+                province,
+                city,
+                district,
+                parcelNumber,
+                areaValue,
+                buildYearValue,
+                usageType,
+                constructionStatus,
+                latitudeValue,
+                longitudeValue
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+
+        console.log(
+            "PROPERTY REGISTERED TX:",
+            tx
+        );
+
+
+        return tx;
+
+    } catch (error) {
 
         console.log(
             "BLOCKCHAIN ERROR:",
             error.message
         );
 
+        console.log(
+            "BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+    }
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| GET PROPERTY FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const getPropertyFromBlockchain = async (propertyId) => {
+
+    try {
+
+        console.log(
+            "READING PROPERTY FROM BLOCKCHAIN:",
+            propertyId
+        );
+
+        console.log(
+            "BLOCKCHAIN CONTRACT:",
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
+        console.log(
+            "CONTRACT HAS getProperty:",
+            typeof contract.methods.getProperty
+        );
+
+        const property = await contract.methods
+            .getProperty(propertyId)
+            .call();
+
+        console.log(
+            "BLOCKCHAIN RAW PROPERTY RESULT:",
+            property
+        );
+
+        console.log(
+            "BLOCKCHAIN RAW PROPERTY RESULT JSON:",
+            JSON.stringify(property, null, 2)
+        );
+
+        if (
+            !property ||
+            !Array.isArray(property) ||
+            property.length < 13
+        ) {
+            throw new Error(
+                "Invalid blockchain property response"
+            );
+        }
+
+        return {
+
+            propertyId:
+                property[0],
+
+            province:
+                property[1],
+
+            city:
+                property[2],
+
+            district:
+                property[3],
+
+            parcelNumber:
+                property[4],
+
+            area:
+                Number(
+                    property[5].toString()
+                ),
+
+            buildYear:
+                Number(
+                    property[6].toString()
+                ),
+
+            usageType:
+                property[7],
+
+            constructionStatus:
+                property[8],
+
+            latitude:
+                Number(
+                    property[9].toString()
+                ) / 1000000,
+
+            longitude:
+                Number(
+                    property[10].toString()
+                ) / 1000000,
+
+            status:
+                Number(
+                    property[11].toString()
+                ),
+
+            exists:
+                Boolean(
+                    property[12]
+                )
+
+        };
+
+    } catch (error) {
+
+        console.log(
+            "BLOCKCHAIN READ ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "BLOCKCHAIN READ ERROR FULL:",
+            error
+        );
 
         throw error;
 
@@ -134,98 +285,62 @@ return tx;
 
 };
 
+// GET ALL PROPERTY IDS FROM BLOCKCHAIN
 
+const getPropertyIdsFromBlockchain = async () => {
 
-
-
-// GET PROPERTY FROM BLOCKCHAIN
-
-const getPropertyFromBlockchain = async (propertyId) => {
     try {
 
-        const contract = tronWeb.contract(
-    contractArtifact.abi,
-    process.env.CONTRACT_ADDRESS
-);
-
-        const basic = await contract
-            .getPropertyBasic(propertyId)
-            .call();
-
-
-        const details = await contract
-            .getPropertyDetails(propertyId)
-            .call();
-
-
-        const location = await contract
-            .getPropertyLocation(propertyId)
-            .call();
-
-
-
-        return {
-
-            propertyId: basic[0],
-
-            province: basic[1],
-
-            city: basic[2],
-
-            district: basic[3],
-
-            parcelNumber: basic[4],
-
-
-            area: Number(
-                details[0].toString()
-            ),
-
-            buildYear: Number(
-                details[1]
-            ),
-
-            usageType:
-                details[2],
-
-            constructionStatus:
-                details[3],
-
-
-            latitude:
-                Number(
-                    location[0].toString()
-                ) / 1000000,
-
-
-            longitude:
-                Number(
-                    location[1].toString()
-                ) / 1000000,
-
-
-            status:
-                Number(
-                    location[2]
-                ),
-
-
-            exists:
-                location[3]
-
-        };
-
-
-    } catch(error){
+        console.log(
+            "READING PROPERTY IDS FROM BLOCKCHAIN"
+        );
 
         console.log(
-            "BLOCKCHAIN READ ERROR:",
+            "BLOCKCHAIN CONTRACT:",
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
+        console.log(
+            "CONTRACT HAS getPropertyIds:",
+            typeof contract.methods.getPropertyIds
+        );
+
+        const result = await contract.methods
+            .getPropertyIds()
+            .call();
+
+        console.log(
+            "BLOCKCHAIN PROPERTY IDS:",
+            result
+        );
+
+        return result;
+
+    } catch (error) {
+
+        console.log(
+            "GET PROPERTY IDS ERROR:",
             error.message
+        );
+
+        console.log(
+            "GET PROPERTY IDS ERROR FULL:",
+            error
         );
 
         throw error;
     }
 };
+
+/*
+|--------------------------------------------------------------------------
+| EXPORTS
+|--------------------------------------------------------------------------
+*/
 
 module.exports = {
 
@@ -233,6 +348,8 @@ module.exports = {
 
     registerPropertyOnBlockchain,
 
-    getPropertyFromBlockchain
+    getPropertyFromBlockchain,
+
+    getPropertyIdsFromBlockchain
 
 };

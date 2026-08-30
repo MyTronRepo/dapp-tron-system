@@ -98,6 +98,8 @@ contract DappTronSystem {
 
     event PropertyRegistered(string propertyId);
 
+    event PropertyUpdated(string propertyId);
+
     event PropertyVerified(string propertyId);
 
     event PropertyRejected(string propertyId);
@@ -204,37 +206,57 @@ contract DappTronSystem {
         emit PropertyRegistered(propertyId);
     }
 
-    function verifyProperty(string calldata propertyId) external onlyAdmin {
-        require(properties[propertyId].exists, "Property not found");
+    function updateProperty(PropertyInput calldata input) external {
+        require(properties[input.propertyId].exists, "Property not found");
 
-        properties[propertyId].status = PropertyStatus.Verified;
+        require(
+            bytes(input.parcelNumber).length > 0,
+            "Parcel number is required"
+        );
 
-        emit PropertyVerified(propertyId);
-    }
+        require(input.area > 0, "Area must be greater than zero");
 
-    function rejectProperty(string calldata propertyId) external onlyAdmin {
-        require(properties[propertyId].exists, "Property not found");
+        Property storage p = properties[input.propertyId];
 
-        properties[propertyId].status = PropertyStatus.Rejected;
+        // اگر شماره پلاک تغییر کرده باشد
+        if (
+            keccak256(bytes(p.parcelNumber)) !=
+            keccak256(bytes(input.parcelNumber))
+        ) {
+            require(
+                bytes(propertyByParcelNumber[input.parcelNumber]).length == 0,
+                "Parcel number already exists"
+            );
 
-        emit PropertyRejected(propertyId);
-    }
+            delete propertyByParcelNumber[p.parcelNumber];
 
-    function suspendProperty(string calldata propertyId) external onlyAdmin {
-        require(properties[propertyId].exists, "Property not found");
+            propertyByParcelNumber[input.parcelNumber] = input.propertyId;
+        }
 
-        properties[propertyId].status = PropertyStatus.Suspended;
+        p.province = input.province;
+
+        p.city = input.city;
+
+        p.district = input.district;
+
+        p.parcelNumber = input.parcelNumber;
+
+        p.area = input.area;
+
+        p.buildYear = input.buildYear;
+
+        p.usageType = input.usageType;
+
+        p.constructionStatus = input.constructionStatus;
+
+        p.latitude = input.latitude;
+
+        p.longitude = input.longitude;
+
+        emit PropertyUpdated(input.propertyId);
     }
 
     function getProperty(
-        string calldata propertyId
-    ) external view returns (Property memory) {
-        require(properties[propertyId].exists, "Property not found");
-
-        return properties[propertyId];
-    }
-
-    function getPropertyBasic(
         string calldata propertyId
     )
         external
@@ -244,69 +266,36 @@ contract DappTronSystem {
             string memory,
             string memory,
             string memory,
-            string memory
+            string memory,
+            uint256,
+            uint16,
+            string memory,
+            string memory,
+            int256,
+            int256,
+            PropertyStatus,
+            bool
         )
     {
         require(properties[propertyId].exists, "Property not found");
 
         Property storage p = properties[propertyId];
 
-        return (p.propertyId, p.province, p.city, p.district, p.parcelNumber);
-    }
-
-    function getPropertyDetails(
-        string calldata propertyId
-    ) external view returns (uint256, uint16, string memory, string memory) {
-        require(properties[propertyId].exists, "Property not found");
-
-        Property storage p = properties[propertyId];
-
-        return (p.area, p.buildYear, p.usageType, p.constructionStatus);
-    }
-
-    function getPropertyLocation(
-        string calldata propertyId
-    ) external view returns (int256, int256, PropertyStatus, bool) {
-        require(properties[propertyId].exists, "Property not found");
-
-        Property storage p = properties[propertyId];
-
-        return (p.latitude, p.longitude, p.status, p.exists);
-    }
-
-    // =========================================================
-    // OWNERSHIP MANAGEMENT
-    // =========================================================
-
-    function addOwner(
-        string calldata propertyId,
-        address walletAddress,
-        bytes32 nationalIdHash,
-        uint8 share
-    ) external onlyAdmin {
-        require(properties[propertyId].exists, "Property not found");
-
-        require(walletAddress != address(0), "Invalid wallet address");
-
-        require(share > 0 && share <= 100, "Invalid share");
-
-        uint256 totalShare;
-
-        for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
-            totalShare += propertyOwners[propertyId][i].share;
-        }
-
-        require(totalShare + share <= 100, "Share exceeds ownership");
-
-        propertyOwners[propertyId].push(
-            Ownership({
-                walletAddress: walletAddress,
-                nationalIdHash: nationalIdHash,
-                share: share
-            })
+        return (
+            p.propertyId,
+            p.province,
+            p.city,
+            p.district,
+            p.parcelNumber,
+            p.area,
+            p.buildYear,
+            p.usageType,
+            p.constructionStatus,
+            p.latitude,
+            p.longitude,
+            p.status,
+            p.exists
         );
-
-        emit OwnerAdded(propertyId, walletAddress, share);
     }
 
     function getOwners(

@@ -77,14 +77,28 @@ function CreateProperty() {
     try {
 
       await registerProperty({
-  ...form,
-  area: Number(form.area),
-  buildYear: Number(form.buildYear),
-  owners: form.owners.map((owner) => ({
-    ...owner,
-    share: Number(owner.share)
-  }))
-});
+
+        ...form,
+
+        area: Number(form.area),
+
+        buildYear: Number(form.buildYear),
+
+        latitude: Number(form.latitude),
+
+        longitude: Number(form.longitude),
+
+        owners: form.owners.map((owner) => ({
+
+          ...owner,
+
+          share: Number(owner.share)
+
+        }))
+
+      });
+
+
       alert("Property registered");
 
 
@@ -109,21 +123,84 @@ function CreateProperty() {
       <form onSubmit={handleSubmit}>
 
 
-        <input name="province" placeholder="Province" onChange={handleChange} />
+        <input
+          name="province"
+          placeholder="Province"
+          value={form.province}
+          onChange={handleChange}
+        />
 
-        <input name="city" placeholder="City" onChange={handleChange} />
 
-        <input name="district" placeholder="District" onChange={handleChange} />
+        <input
+          name="city"
+          placeholder="City"
+          value={form.city}
+          onChange={handleChange}
+        />
 
-        <input name="parcelNumber" placeholder="Parcel Number" onChange={handleChange} />
 
-        <input name="area" placeholder="Area" onChange={handleChange} />
+        <input
+          name="district"
+          placeholder="District"
+          value={form.district}
+          onChange={handleChange}
+        />
 
-        <input name="buildYear" placeholder="Build Year" onChange={handleChange} />
 
-        <input name="usageType" placeholder="Usage Type" onChange={handleChange} />
+        <input
+          name="parcelNumber"
+          placeholder="Parcel Number"
+          value={form.parcelNumber}
+          onChange={handleChange}
+        />
 
-        <input name="constructionStatus" placeholder="Construction Status" onChange={handleChange} />
+
+        <input
+          name="area"
+          placeholder="Area"
+          value={form.area}
+          onChange={handleChange}
+        />
+
+
+        <input
+          name="buildYear"
+          placeholder="Build Year"
+          value={form.buildYear}
+          onChange={handleChange}
+        />
+
+
+        <input
+          name="usageType"
+          placeholder="Usage Type"
+          value={form.usageType}
+          onChange={handleChange}
+        />
+
+
+        <input
+          name="constructionStatus"
+          placeholder="Construction Status"
+          value={form.constructionStatus}
+          onChange={handleChange}
+        />
+
+
+        <input
+          name="latitude"
+          placeholder="Latitude"
+          value={form.latitude}
+          onChange={handleChange}
+        />
+
+
+        <input
+          name="longitude"
+          placeholder="Longitude"
+          value={form.longitude}
+          onChange={handleChange}
+        />
 
 
         <h2>Owners</h2>
@@ -175,7 +252,6 @@ function CreateProperty() {
 
 
       </form>
-
 
     </div>
   );
