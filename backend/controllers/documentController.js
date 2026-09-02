@@ -59,6 +59,8 @@ const registerDocument = async (req, res) => {
             });
 
 
+
+
         if (!property) {
 
             return errorResponse(
