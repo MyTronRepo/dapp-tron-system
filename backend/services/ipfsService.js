@@ -4,11 +4,18 @@ const path = require("path");
 const axios = require("axios");
 const FormData = require("form-data");
 
-const PINATA_UPLOAD_URL = "https://uploads.pinata.cloud/v3/files";
+const PINATA_UPLOAD_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
 const uploadToIPFS = async (filePath) => {
+
+
+
     try {
         if (!process.env.PINATA_JWT) {
+            console.log(
+    "PINATA JWT START:",
+    process.env.PINATA_JWT.substring(0, 20)
+);
             throw new Error("PINATA_JWT is missing in .env");
         }
 
@@ -43,7 +50,7 @@ const uploadToIPFS = async (filePath) => {
             }
         );
 
-        const cid = response.data.data.cid;
+        const cid = response.data.IpfsHash;
 
         if (!cid) {
             throw new Error("CID was not returned from Pinata.");
