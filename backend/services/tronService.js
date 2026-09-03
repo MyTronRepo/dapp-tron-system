@@ -430,6 +430,121 @@ const getPropertyIdsFromBlockchain = async () => {
     }
 };
 
+
+const registerDocumentOnBlockchain = async (
+    propertyId,
+    documentHash,
+    documentURI
+) => {
+
+    try {
+
+        console.log(
+            "REGISTERING DOCUMENT ON BLOCKCHAIN:",
+            propertyId
+        );
+
+
+        const contract = await tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
+
+
+        const formattedHash = "0x" + documentHash;
+
+
+        const tx = await contract
+            .registerDocument(
+                propertyId,
+                formattedHash,
+                documentURI
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+
+        console.log(
+            "DOCUMENT REGISTERED TX:",
+            tx
+        );
+
+
+        return tx;
+
+
+    } catch (error) {
+
+        console.log(
+            "DOCUMENT REGISTER ERROR:",
+            error?.message
+        );
+
+
+        console.log(
+            "DOCUMENT REGISTER ERROR FULL:",
+            error
+        );
+
+
+        throw error;
+
+    }
+
+};
+
+
+const verifyDocumentOnBlockchain = async (
+    documentId
+) => {
+
+    try {
+
+        console.log(
+            "VERIFYING DOCUMENT ON BLOCKCHAIN:",
+            documentId
+        );
+
+
+        const contract = await tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
+
+
+        const tx = await contract
+            .verifyDocument(
+                documentId
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+
+        console.log(
+            "DOCUMENT VERIFIED TX:",
+            tx
+        );
+
+
+        return tx;
+
+
+    } catch(error){
+
+        console.log(
+            "VERIFY DOCUMENT BLOCKCHAIN ERROR:",
+            error.message
+        );
+
+        throw error;
+
+    }
+
+};
+
+
 /*
 |--------------------------------------------------------------------------
 | EXPORTS
@@ -442,10 +557,14 @@ module.exports = {
 
     registerPropertyOnBlockchain,
 
+    verifyDocumentOnBlockchain,
+
     updatePropertyOnBlockchain,
 
     getPropertyFromBlockchain,
 
-    getPropertyIdsFromBlockchain
+    getPropertyIdsFromBlockchain,
+
+    registerDocumentOnBlockchain
 
 };

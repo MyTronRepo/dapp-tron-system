@@ -108,6 +108,8 @@ contract DappTronSystem {
 
     event DocumentRevoked(string propertyId, bytes32 documentHash);
 
+    event DocumentVerified(string propertyId, bytes32 documentHash);
+
     event TransferRequested(uint256 transferId);
 
     event TransferApproved(uint256 transferId);
@@ -353,6 +355,23 @@ contract DappTronSystem {
         require(properties[propertyId].exists, "Property not found");
 
         return propertyDocuments[propertyId];
+    }
+
+    function verifyDocument(
+        string calldata propertyId,
+        uint256 index
+    ) external onlyAdmin {
+        require(
+            index < propertyDocuments[propertyId].length,
+            "Document not found"
+        );
+
+        propertyDocuments[propertyId][index].status = DocumentStatus.Valid;
+
+        emit DocumentVerified(
+            propertyId,
+            propertyDocuments[propertyId][index].documentHash
+        );
     }
 
     function revokeDocument(

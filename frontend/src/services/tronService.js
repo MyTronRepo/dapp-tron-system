@@ -1,104 +1,172 @@
 import contractAbi from "../contracts/contract-abi.json";
 
+
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 
+
+
+// CONNECT TRONLINK
+
 export const connectTronLink = async () => {
-  const provider = window.tron;
 
-  if (!provider || !provider.isTronLink) {
-    throw new Error("TronLink is not installed or was not detected.");
-  }
+    const tronWeb = window.tronWeb || window.tron?.tronWeb;
 
-  try {
-    const accounts = await provider.request({
-      method: "eth_requestAccounts",
-    });
 
-    if (!accounts || !accounts.length) {
-      throw new Error("Wallet address was not received.");
+    if (!tronWeb) {
+        throw new Error(
+            "TronLink is not installed"
+        );
     }
 
-    const address = accounts[0];
 
-    const tronWeb = provider.tronWeb;
+    const address =
+        tronWeb.defaultAddress.base58;
 
-    if (!tronWeb || tronWeb === false) {
-      throw new Error("TronWeb is not ready.");
+
+
+    if (!address) {
+
+        throw new Error(
+            "Please unlock TronLink wallet first"
+        );
+
     }
+
+
+
+    console.log(
+        "CONNECTED TRON ADDRESS:",
+        address
+    );
+
 
     return address;
-  } catch (error) {
-    console.error("TronLink connection error:", error);
 
-    throw new Error(
-      error?.message || "Failed to connect to TronLink."
+};
+
+
+
+
+
+// NETWORK CHECK
+
+export const getTronNetwork = ()=>{
+
+
+    const tronWeb =
+        window.tron?.tronWeb;
+
+
+
+    if(!tronWeb){
+        throw new Error(
+            "TronWeb unavailable"
+        );
+    }
+
+
+
+    const host =
+        tronWeb.fullNode.host;
+
+
+
+    return {
+
+        host,
+
+        name:
+        host.includes("nile")
+        ?
+        "Nile"
+        :
+        "Unknown",
+
+
+        isCorrect:
+        host.includes("nile")
+
+    };
+
+
+};
+
+
+
+
+
+
+// CONTRACT
+
+export const getContract = async()=>{
+
+
+    const tronWeb =
+        window.tron.tronWeb;
+
+
+
+    if(!CONTRACT_ADDRESS){
+
+        throw new Error(
+            "Contract address missing"
+        );
+
+    }
+
+
+
+    return await tronWeb.contract(
+        contractAbi,
+        CONTRACT_ADDRESS
     );
-  }
+
 };
 
-export const getTronNetwork = () => {
-  const provider = window.tron;
 
-  if (!provider || !provider.tronWeb) {
-    throw new Error("TronLink or TronWeb is not available.");
-  }
 
-  const tronWeb = provider.tronWeb;
 
-  const fullNode =
-    tronWeb.fullNode?.host ||
-    tronWeb.fullNode?.host?.toString() ||
-    "";
 
-  const networkName = fullNode.toLowerCase().includes("nile")
-    ? "Nile"
-    : fullNode || "Unknown";
 
-  return {
-    name: networkName,
-    isCorrect: networkName === "Nile",
-  };
+export const getPropertyIds = async()=>{
+
+
+    const contract =
+        await getContract();
+
+
+    return await contract
+        .getPropertyIds()
+        .call();
+
+
 };
 
-export const getContract = async () => {
-  const provider = window.tron;
 
-  if (!provider || !provider.tronWeb) {
-    throw new Error("TronLink or TronWeb is not available.");
-  }
 
-  const tronWeb = provider.tronWeb;
 
-  if (!CONTRACT_ADDRESS) {
-    throw new Error("Contract address is not configured.");
-  }
 
-  const contract = await tronWeb.contract(
-    contractAbi,
-    CONTRACT_ADDRESS
-  );
 
-  return contract;
-};
+export const getProperty = async(propertyId)=>{
 
-export const getPropertyIds = async () => {
-  const contract = await getContract();
 
-  const result = await contract
-    .getPropertyIds()
-    .call();
+    if(!propertyId){
 
-  return result || [];
-};
+        throw new Error(
+            "Property ID required"
+        );
 
-export const getProperty = async (propertyId) => {
-  if (!propertyId) {
-    throw new Error("Property ID is required.");
-  }
+    }
 
-  const contract = await getContract();
 
-  return await contract
-    .getProperty(propertyId)
-    .call();
+    const contract =
+        await getContract();
+
+
+
+    return await contract
+        .getProperty(propertyId)
+        .call();
+
+
 };

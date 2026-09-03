@@ -4,6 +4,10 @@ const Document = require("../models/Document");
 const Property = require("../models/Property");
 
 const {
+    registerDocumentOnBlockchain
+} = require("../services/tronService");
+
+const {
     successResponse,
     errorResponse
 } = require("../utils/responseHandler");
@@ -277,7 +281,7 @@ const verifyDocument = async(req,res)=>{
 
         await document.save();
 
-
+      
         await createAuditLog({
 
             action:"VERIFY_DOCUMENT",
@@ -503,9 +507,17 @@ const uploadDocument = async(req,res)=>{
         document.documentURI = ipfsResult.cid;
 
 
-        await document.save();
+     const tx =
+    await registerDocumentOnBlockchain(
+        document.propertyId,
+        hash,
+        ipfsResult.cid
+    );
 
 
+document.blockchainTxId = tx;
+
+await document.save();
 
         await createAuditLog({
 
