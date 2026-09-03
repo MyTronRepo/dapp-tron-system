@@ -430,6 +430,53 @@ const getPropertyIdsFromBlockchain = async () => {
     }
 };
 
+/*
+|--------------------------------------------------------------------------
+| GET DOCUMENTS FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const getDocumentsFromBlockchain = async (propertyId) => {
+
+    try {
+
+        console.log(
+            "READING DOCUMENTS FROM BLOCKCHAIN:",
+            propertyId
+        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
+        const documents = await contract.methods
+            .getDocuments(propertyId)
+            .call();
+
+        console.log(
+            "BLOCKCHAIN DOCUMENTS:",
+            documents
+        );
+
+        return documents;
+
+    } catch (error) {
+
+        console.log(
+            "GET DOCUMENTS BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "GET DOCUMENTS BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+
+    }
+
+};
 
 const registerDocumentOnBlockchain = async (
     propertyId,
@@ -496,42 +543,56 @@ const registerDocumentOnBlockchain = async (
 
 
 const verifyDocumentOnBlockchain = async (
-    documentId
+    propertyId,
+    documentIndex
 ) => {
 
     try {
 
         console.log(
-            "DOCUMENT VERIFY REQUEST:",
-            documentId
+            "VERIFYING DOCUMENT ON BLOCKCHAIN:",
+            propertyId,
+            documentIndex
         );
 
 
-        /*
-        Smart Contract فعلی
-        verifyDocument ندارد.
-
-        Verification فعلاً در MongoDB انجام می‌شود.
-        بعد از اضافه شدن تابع Solidity،
-        این بخش به Blockchain متصل خواهد شد.
-        */
+        const contract = await tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
 
 
-        return {
-            success: true,
-            documentId,
-            blockchain: false,
-            message:
-                "Document verification stored off-chain. Smart contract function not available."
-        };
+        const tx = await contract
+            .verifyDocument(
+                propertyId,
+                documentIndex
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+
+        console.log(
+            "DOCUMENT VERIFIED BLOCKCHAIN TX:",
+            tx
+        );
+
+
+        return tx;
 
 
     } catch(error){
 
         console.log(
-            "VERIFY DOCUMENT ERROR:",
+            "VERIFY DOCUMENT BLOCKCHAIN ERROR:",
             error.message
         );
+
+
+        console.log(
+            error
+        );
+
 
         throw error;
 
@@ -544,6 +605,7 @@ const verifyDocumentOnBlockchain = async (
 | EXPORTS
 |--------------------------------------------------------------------------
 */
+
 
 module.exports = {
 
@@ -558,6 +620,8 @@ module.exports = {
     getPropertyFromBlockchain,
 
     getPropertyIdsFromBlockchain,
+
+    getDocumentsFromBlockchain,
 
     registerDocumentOnBlockchain
 

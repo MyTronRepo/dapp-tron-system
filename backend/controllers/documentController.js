@@ -252,25 +252,23 @@ const verifyDocument = async(req,res)=>{
             documentId
         } = req.params;
 
+           
 
-        const document =
-            await Document.findOne({
-                documentId
-            });
-
-            const documents =
-    await Document.find({
-        propertyId: document.propertyId
-    })
-    .sort({
-        createdAt: 1
+            const document =
+    await Document.findOne({
+        documentId
     });
 
 
-const documentIndex =
-    documents.findIndex(
-        d => d.documentId === document.documentId
+if(!document){
+
+    return errorResponse(
+        res,
+        "Document not found",
+        404
     );
+
+}
 
         if(!document){
 
@@ -283,38 +281,17 @@ const documentIndex =
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | VERIFY ON BLOCKCHAIN
-        |--------------------------------------------------------------------------
-        */
-
-        const tx =
-            await verifyDocumentOnBlockchain(
-                document.documentId
-            );
-
 
         /*
-        |--------------------------------------------------------------------------
-        | UPDATE MONGODB
-        |--------------------------------------------------------------------------
-        */
-
-        if(documentIndex < 0){
-
-    return errorResponse(
-        res,
-        "Document index not found",
-        400
-    );
-
-}
+|--------------------------------------------------------------------------
+| VERIFY ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
 
 const blockchainTx =
     await verifyDocumentOnBlockchain(
         document.propertyId,
-        documentIndex
+        0
     );
 
         document.status = "Verified";
@@ -329,8 +306,7 @@ const blockchainTx =
 
 
         document.blockchainTxId =
-            tx;
-
+    blockchainTx;
 
 
         await document.save();
@@ -365,7 +341,7 @@ const blockchainTx =
                     document.propertyId,
 
                 blockchainTxId:
-                    tx
+    blockchainTx
 
             }
 
