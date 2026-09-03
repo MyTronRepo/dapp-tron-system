@@ -4,7 +4,8 @@ const Document = require("../models/Document");
 const Property = require("../models/Property");
 
 const {
-    registerDocumentOnBlockchain
+    registerDocumentOnBlockchain,
+    verifyDocumentOnBlockchain
 } = require("../services/tronService");
 
 const {
@@ -242,7 +243,6 @@ const getDocumentById = async (req,res)=>{
 };
 
 
-
 // VERIFY DOCUMENT
 const verifyDocument = async(req,res)=>{
 
@@ -258,6 +258,19 @@ const verifyDocument = async(req,res)=>{
                 documentId
             });
 
+            const documents =
+    await Document.find({
+        propertyId: document.propertyId
+    })
+    .sort({
+        createdAt: 1
+    });
+
+
+const documentIndex =
+    documents.findIndex(
+        d => d.documentId === document.documentId
+    );
 
         if(!document){
 
@@ -270,18 +283,66 @@ const verifyDocument = async(req,res)=>{
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFY ON BLOCKCHAIN
+        |--------------------------------------------------------------------------
+        */
+
+        const tx =
+            await verifyDocumentOnBlockchain(
+                document.documentId
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE MONGODB
+        |--------------------------------------------------------------------------
+        */
+
+        if(documentIndex < 0){
+
+    return errorResponse(
+        res,
+        "Document index not found",
+        400
+    );
+
+}
+
+const blockchainTx =
+    await verifyDocumentOnBlockchain(
+        document.propertyId,
+        documentIndex
+    );
+
         document.status = "Verified";
+
 
         document.verifiedBy =
             req.user?.walletAddress || "Admin";
+
 
         document.verifiedAt =
             new Date();
 
 
+        document.blockchainTxId =
+            tx;
+
+
+
         await document.save();
 
-      
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AUDIT LOG
+        |--------------------------------------------------------------------------
+        */
+
         await createAuditLog({
 
             action:"VERIFY_DOCUMENT",
@@ -299,21 +360,36 @@ const verifyDocument = async(req,res)=>{
             ipAddress:req.ip,
 
             details:{
-                propertyId:document.propertyId
+
+                propertyId:
+                    document.propertyId,
+
+                blockchainTxId:
+                    tx
+
             }
 
         });
 
 
-        return successResponse(
-            res,
-            document,
-            "Document verified successfully"
-        );
 
+       return successResponse(
+    res,
+    {
+        document,
+        blockchainTx
+    },
+    "Document verified successfully"
+);
 
     }
     catch(error){
+
+        console.log(
+            "VERIFY DOCUMENT ERROR:",
+            error.message
+        );
+
 
         return errorResponse(
             res,
@@ -324,8 +400,6 @@ const verifyDocument = async(req,res)=>{
     }
 
 };
-
-
 
 // REJECT DOCUMENT
 const rejectDocument = async(req,res)=>{
@@ -404,8 +478,6 @@ const rejectDocument = async(req,res)=>{
     }
 
 };
-
-
 
 // UPLOAD DOCUMENT
 const uploadDocument = async(req,res)=>{

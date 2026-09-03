@@ -502,39 +502,34 @@ const verifyDocumentOnBlockchain = async (
     try {
 
         console.log(
-            "VERIFYING DOCUMENT ON BLOCKCHAIN:",
+            "DOCUMENT VERIFY REQUEST:",
             documentId
         );
 
 
-        const contract = await tronWeb.contract(
-            contractArtifact.abi,
-            process.env.CONTRACT_ADDRESS
-        );
+        /*
+        Smart Contract فعلی
+        verifyDocument ندارد.
+
+        Verification فعلاً در MongoDB انجام می‌شود.
+        بعد از اضافه شدن تابع Solidity،
+        این بخش به Blockchain متصل خواهد شد.
+        */
 
 
-        const tx = await contract
-            .verifyDocument(
-                documentId
-            )
-            .send({
-                feeLimit: 100000000
-            });
-
-
-        console.log(
-            "DOCUMENT VERIFIED TX:",
-            tx
-        );
-
-
-        return tx;
+        return {
+            success: true,
+            documentId,
+            blockchain: false,
+            message:
+                "Document verification stored off-chain. Smart contract function not available."
+        };
 
 
     } catch(error){
 
         console.log(
-            "VERIFY DOCUMENT BLOCKCHAIN ERROR:",
+            "VERIFY DOCUMENT ERROR:",
             error.message
         );
 
@@ -543,7 +538,6 @@ const verifyDocumentOnBlockchain = async (
     }
 
 };
-
 
 /*
 |--------------------------------------------------------------------------
