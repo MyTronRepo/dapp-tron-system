@@ -1,22 +1,4 @@
-const dns = require("dns");
 
-dns.setDefaultResultOrder("ipv4first");
-
-const originalLookup = dns.lookup;
-
-dns.lookup = function (hostname, options, callback) {
-    if (hostname === "nile.trongrid.io") {
-        if (typeof options === "function") {
-            return options(null, "52.33.11.204", 4);
-        }
-
-        if (typeof callback === "function") {
-            return callback(null, "52.33.11.204", 4);
-        }
-    }
-
-    return originalLookup.call(dns, hostname, options, callback);
-};
 
 require("dotenv").config();
 

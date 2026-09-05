@@ -905,10 +905,6 @@ catch(error){
 };
 
 
-
-
-
-
 module.exports = {
 
     registerProperty,
