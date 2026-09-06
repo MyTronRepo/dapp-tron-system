@@ -584,6 +584,109 @@ const verifyDocumentOnBlockchain = async (
 
 /*
 |--------------------------------------------------------------------------
+| GET TRANSFER REQUEST FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const getTransferRequestFromBlockchain = async (transferId) => {
+
+    try {
+
+        console.log(
+            "READING TRANSFER REQUEST FROM BLOCKCHAIN:",
+            transferId
+        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
+        const transfer =
+            await contract.methods
+                .getTransferRequest(
+                    transferId
+                )
+                .call();
+
+        console.log(
+            "BLOCKCHAIN TRANSFER REQUEST:",
+            transfer
+        );
+
+        return transfer;
+
+    } catch (error) {
+
+        console.log(
+            "GET TRANSFER REQUEST BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "GET TRANSFER REQUEST BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+
+    }
+
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| GET TRANSFER HISTORY FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const getTransferHistoryFromBlockchain = async (propertyId) => {
+
+    try {
+
+        console.log(
+            "READING TRANSFER HISTORY FROM BLOCKCHAIN:",
+            propertyId
+        );
+
+        const contract = await tronWeb
+            .contract()
+            .at(process.env.CONTRACT_ADDRESS);
+
+        const history =
+            await contract.methods
+                .getTransferHistory(
+                    propertyId
+                )
+                .call();
+
+        console.log(
+            "BLOCKCHAIN TRANSFER HISTORY:",
+            history
+        );
+
+        return history;
+
+    } catch (error) {
+
+        console.log(
+            "GET TRANSFER HISTORY BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "GET TRANSFER HISTORY BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+
+    }
+
+};
+
+/*
+|--------------------------------------------------------------------------
 | EXPORTS
 |--------------------------------------------------------------------------
 */
@@ -605,6 +708,10 @@ module.exports = {
 
     getDocumentsFromBlockchain,
 
-    registerDocumentOnBlockchain
+    registerDocumentOnBlockchain,
+
+    getTransferRequestFromBlockchain,
+
+    getTransferHistoryFromBlockchain
 
 };

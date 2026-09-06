@@ -72,6 +72,25 @@
       },
       {
         "indexed": false,
+        "internalType": "bytes32",
+        "name": "documentHash",
+        "type": "bytes32"
+      }
+    ],
+    "name": "DocumentVerified",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "walletAddress",
         "type": "address"
@@ -122,6 +141,19 @@
         "type": "string"
       }
     ],
+    "name": "PropertyUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      }
+    ],
     "name": "PropertyVerified",
     "type": "event"
   },
@@ -146,10 +178,125 @@
         "internalType": "uint256",
         "name": "transferId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "transferredShare",
+        "type": "uint8"
+      }
+    ],
+    "name": "TransferCompleted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferExpired",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "TransferRejected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
       }
     ],
     "name": "TransferRequested",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveTransferByAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "approveTransferByBuyer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "changeAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
     "inputs": [
@@ -160,33 +307,87 @@
       },
       {
         "internalType": "address",
-        "name": "walletAddress",
+        "name": "buyer",
         "type": "address"
       },
       {
-        "internalType": "bytes32",
-        "name": "nationalIdHash",
-        "type": "bytes32"
-      },
-      {
         "internalType": "uint8",
-        "name": "share",
+        "name": "transferredShare",
         "type": "uint8"
       }
     ],
-    "name": "addOwner",
+    "name": "createTransferRequest",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "expireTransfer",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "admin",
+    "name": "getAdmin",
     "outputs": [
       {
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      }
+    ],
+    "name": "getDocuments",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "propertyId",
+            "type": "string"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "documentHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "string",
+            "name": "documentURI",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "issueDate",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum DappTronSystem.DocumentStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct DappTronSystem.Document[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -237,92 +438,6 @@
       }
     ],
     "name": "getProperty",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "string",
-            "name": "propertyId",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "province",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "city",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "district",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "parcelNumber",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "area",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint16",
-            "name": "buildYear",
-            "type": "uint16"
-          },
-          {
-            "internalType": "string",
-            "name": "usageType",
-            "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "constructionStatus",
-            "type": "string"
-          },
-          {
-            "internalType": "int256",
-            "name": "latitude",
-            "type": "int256"
-          },
-          {
-            "internalType": "int256",
-            "name": "longitude",
-            "type": "int256"
-          },
-          {
-            "internalType": "enum DappTronSystem.PropertyStatus",
-            "name": "status",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bool",
-            "name": "exists",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct DappTronSystem.Property",
-        "name": "",
-        "type": "tuple"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "propertyId",
-        "type": "string"
-      }
-    ],
-    "name": "getPropertyData",
     "outputs": [
       {
         "internalType": "string",
@@ -426,6 +541,128 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      }
+    ],
+    "name": "getTransferHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "transferId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "propertyId",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "transferredShare",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct DappTronSystem.TransferHistory[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTransferRequest",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "transferId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "propertyId",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "seller",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "buyer",
+            "type": "address"
+          },
+          {
+            "internalType": "uint8",
+            "name": "transferredShare",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bool",
+            "name": "buyerApproved",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "adminApproved",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "expireAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "enum DappTronSystem.TransferStatus",
+            "name": "status",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct DappTronSystem.TransferRequest",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "propertyCounter",
     "outputs": [
@@ -436,6 +673,29 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "propertyId",
+        "type": "string"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "documentHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "documentURI",
+        "type": "string"
+      }
+    ],
+    "name": "registerDocument",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -504,12 +764,12 @@
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "propertyId",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "transferId",
+        "type": "uint256"
       }
     ],
-    "name": "rejectProperty",
+    "name": "rejectTransfer",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -520,9 +780,14 @@
         "internalType": "string",
         "name": "propertyId",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
       }
     ],
-    "name": "suspendProperty",
+    "name": "revokeDocument",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -543,12 +808,87 @@
   {
     "inputs": [
       {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "propertyId",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "province",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "city",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "district",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "parcelNumber",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "area",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "buildYear",
+            "type": "uint16"
+          },
+          {
+            "internalType": "string",
+            "name": "usageType",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "constructionStatus",
+            "type": "string"
+          },
+          {
+            "internalType": "int256",
+            "name": "latitude",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "longitude",
+            "type": "int256"
+          }
+        ],
+        "internalType": "struct DappTronSystem.PropertyInput",
+        "name": "input",
+        "type": "tuple"
+      }
+    ],
+    "name": "updateProperty",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "propertyId",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
       }
     ],
-    "name": "verifyProperty",
+    "name": "verifyDocument",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

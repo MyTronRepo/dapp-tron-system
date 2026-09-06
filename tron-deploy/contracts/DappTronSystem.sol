@@ -136,6 +136,7 @@ contract DappTronSystem {
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
+
         _;
     }
 
@@ -204,6 +205,20 @@ contract DappTronSystem {
         propertyIds.push(propertyId);
 
         propertyCounter++;
+
+        // =========================================
+        // INITIAL OWNER
+        // =========================================
+
+        propertyOwners[propertyId].push(
+            Ownership({
+                walletAddress: msg.sender,
+                nationalIdHash: bytes32(0),
+                share: 100
+            })
+        );
+
+        emit OwnerAdded(propertyId, msg.sender, 100);
 
         emit PropertyRegistered(propertyId);
     }
@@ -413,6 +428,7 @@ contract DappTronSystem {
         for (uint256 i = 0; i < propertyOwners[propertyId].length; i++) {
             if (propertyOwners[propertyId][i].walletAddress == msg.sender) {
                 sellerIndex = i;
+
                 break;
             }
         }
@@ -549,6 +565,7 @@ contract DappTronSystem {
          * We copy it into memory before using it in contexts
          * that require a memory/calldata-compatible string.
          */
+
         string memory propertyId = request.propertyId;
 
         address seller = request.seller;

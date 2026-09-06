@@ -55,6 +55,12 @@ new mongoose.Schema({
     },
 
 
+    blockchainTransferId:{
+        type:Number,
+        default:null
+    },
+
+
     completed:{
         type:Boolean,
         default:false
