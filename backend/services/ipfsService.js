@@ -69,6 +69,30 @@ const uploadToIPFS = async (filePath) => {
     }
 };
 
+const getFileFromIPFS = async (cid) => {
+    if (!cid) {
+        throw new Error("CID is required");
+    }
+
+    const gatewayUrl =
+        `https://gateway.pinata.cloud/ipfs/${cid}`;
+
+    const response = await axios.get(
+        gatewayUrl,
+        {
+            responseType: "arraybuffer",
+        }
+    );
+
+    return {
+        buffer: Buffer.from(response.data),
+        contentType:
+            response.headers["content-type"] ||
+            "application/octet-stream",
+    };
+};
+
 module.exports = {
     uploadToIPFS,
+    getFileFromIPFS,
 };
