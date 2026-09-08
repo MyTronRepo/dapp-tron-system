@@ -23,19 +23,13 @@ const {
 
 
 const {
-
     registerDocument,
-
     getDocumentsByProperty,
-
     getDocumentById,
-
     verifyDocument,
-
     rejectDocument,
-
-    uploadDocument
-
+    uploadDocument,
+    replaceDocument
 } = require("../controllers/documentController");
 
 
@@ -127,20 +121,15 @@ router.put(
 
 
 // UPLOAD DOCUMENT
+// REPLACE DOCUMENT
 router.post(
-
-    "/upload/:documentId",
-
+    "/replace/:documentId",
     authenticate,
-
     authorize(
-        "owner"
+        "admin"
     ),
-
     upload.single("document"),
-
-    uploadDocument
-
+    replaceDocument
 );
 
 

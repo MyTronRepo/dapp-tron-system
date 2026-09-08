@@ -582,6 +582,63 @@ const verifyDocumentOnBlockchain = async (
 
 };
 
+const replaceDocumentOnBlockchain = async (
+    propertyId,
+    documentIndex,
+    newDocumentHash,
+    newDocumentURI
+) => {
+
+    try {
+
+        console.log(
+            "REPLACING DOCUMENT ON BLOCKCHAIN:",
+            propertyId,
+            documentIndex
+        );
+
+        const contract = await tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const formattedHash = "0x" + newDocumentHash;
+
+        const tx = await contract
+            .replaceDocument(
+                propertyId,
+                documentIndex,
+                formattedHash,
+                newDocumentURI
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+        console.log(
+            "DOCUMENT REPLACED BLOCKCHAIN TX:",
+            tx
+        );
+
+        return tx;
+
+    } catch (error) {
+
+        console.log(
+            "REPLACE DOCUMENT BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "REPLACE DOCUMENT BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+    }
+
+};
+
 /*
 |--------------------------------------------------------------------------
 | GET TRANSFER REQUEST FROM BLOCKCHAIN
@@ -699,6 +756,8 @@ module.exports = {
     registerPropertyOnBlockchain,
 
     verifyDocumentOnBlockchain,
+
+    replaceDocumentOnBlockchain,
 
     updatePropertyOnBlockchain,
 

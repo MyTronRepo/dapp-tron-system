@@ -406,6 +406,47 @@ contract DappTronSystem {
         );
     }
 
+    function replaceDocument(
+        string calldata propertyId,
+        uint256 index,
+        bytes32 newDocumentHash,
+        string calldata newDocumentURI
+    ) external onlyAdmin {
+        require(properties[propertyId].exists, "Property not found");
+
+        require(
+            index < propertyDocuments[propertyId].length,
+            "Document not found"
+        );
+
+        require(newDocumentHash != bytes32(0), "Invalid hash");
+
+        Document storage oldDocument = propertyDocuments[propertyId][index];
+
+        require(
+            oldDocument.status != DocumentStatus.Revoked,
+            "Document already revoked"
+        );
+
+        // Revoke old document
+        oldDocument.status = DocumentStatus.Revoked;
+
+        emit DocumentRevoked(propertyId, oldDocument.documentHash);
+
+        // Register new document
+        propertyDocuments[propertyId].push(
+            Document({
+                propertyId: propertyId,
+                documentHash: newDocumentHash,
+                documentURI: newDocumentURI,
+                issueDate: block.timestamp,
+                status: DocumentStatus.Valid
+            })
+        );
+
+        emit DocumentRegistered(propertyId, newDocumentHash);
+    }
+
     // =========================================================
     // TRANSFER MANAGEMENT
     // =========================================================

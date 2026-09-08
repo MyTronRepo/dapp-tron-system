@@ -5,7 +5,9 @@ const Property = require("../models/Property");
 
 const {
     registerDocumentOnBlockchain,
-    verifyDocumentOnBlockchain
+    verifyDocumentOnBlockchain,
+    replaceDocumentOnBlockchain,
+    getDocumentsFromBlockchain
 } = require("../services/tronService");
 
 const {
@@ -616,6 +618,268 @@ await document.save();
 
 };
 
+// REPLACE DOCUMENT
+const replaceDocument = async (req, res) => {
+
+    try {
+
+        const { documentId } = req.params;
+
+        const oldDocument = await Document.findOne({
+            documentId
+        });
+
+        if (!oldDocument) {
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+        }
+
+        if (!req.file) {
+            return errorResponse(
+                res,
+                "No file uploaded",
+                400
+            );
+        }
+
+        const allowedExtensions = [
+            ".pdf",
+            ".jpg",
+            ".jpeg",
+            ".png"
+        ];
+
+        const extension =
+            path.extname(
+                req.file.originalname
+            ).toLowerCase();
+
+        if (!allowedExtensions.includes(extension)) {
+
+            fs.unlinkSync(req.file.path);
+
+            return errorResponse(
+                res,
+                "Unsupported file type",
+                400
+            );
+        }
+
+        const maxFileSize =
+            10 * 1024 * 1024;
+
+        if (req.file.size > maxFileSize) {
+
+            fs.unlinkSync(req.file.path);
+
+            return errorResponse(
+                res,
+                "File size exceeds 10MB",
+                400
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generate new hash
+        |--------------------------------------------------------------------------
+        */
+
+        const newHash =
+            generateFileHash(
+                req.file.path
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Upload new document to IPFS
+        |--------------------------------------------------------------------------
+        */
+
+        const ipfsResult =
+            await uploadToIPFS(
+                req.file.path
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find old document index on blockchain
+        |--------------------------------------------------------------------------
+        */
+
+        const blockchainDocuments =
+    await getDocumentsFromBlockchain(
+        oldDocument.propertyId
+    );
+
+        const documentIndex =
+            blockchainDocuments.findIndex(
+                doc =>
+                    String(doc.documentHash)
+                        .toLowerCase()
+                        ===
+                    ("0x" + oldDocument.fileHash)
+                        .toLowerCase()
+            );
+
+        if (documentIndex === -1) {
+
+            fs.unlinkSync(req.file.path);
+
+            return errorResponse(
+                res,
+                "Document not found on blockchain",
+                404
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Replace document atomically on blockchain
+        |--------------------------------------------------------------------------
+        */
+
+        const blockchainTx =
+            await replaceDocumentOnBlockchain(
+                oldDocument.propertyId,
+                documentIndex,
+                newHash,
+                ipfsResult.cid
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update old MongoDB document
+        |--------------------------------------------------------------------------
+        */
+
+        oldDocument.status = "Revoked";
+
+        await oldDocument.save();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create new MongoDB document
+        |--------------------------------------------------------------------------
+        */
+
+        const newDocument =
+            await Document.create({
+
+                documentId: uuidv4(),
+
+                propertyId:
+                    oldDocument.propertyId,
+
+                documentName:
+                    oldDocument.documentName,
+
+                documentType:
+                    oldDocument.documentType,
+
+                fileHash:
+                    newHash,
+
+                documentURI:
+                    ipfsResult.cid,
+
+                uploadedBy:
+                    req.user?.walletAddress ||
+                    oldDocument.uploadedBy,
+
+                status: "Pending",
+
+                version:
+                    Number(oldDocument.version || 1) + 1,
+
+                replacedDocumentId:
+                    oldDocument.documentId,
+
+                blockchainTxId:
+                    blockchainTx
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Audit Log
+        |--------------------------------------------------------------------------
+        */
+
+        await createAuditLog({
+
+            action: "REPLACE_DOCUMENT",
+
+            entity: "Document",
+
+            entityId:
+                newDocument.documentId,
+
+            performedBy:
+                req.user?.walletAddress ||
+                "Owner",
+
+            role:
+                req.user?.role ||
+                "Owner",
+
+            ipAddress: req.ip,
+
+            details: {
+
+                propertyId:
+                    oldDocument.propertyId,
+
+                oldDocumentId:
+                    oldDocument.documentId,
+
+                newDocumentId:
+                    newDocument.documentId,
+
+                documentHash:
+                    newHash,
+
+                documentURI:
+                    ipfsResult.cid,
+
+                blockchainTxId:
+                    blockchainTx
+            }
+
+        });
+
+        fs.unlinkSync(
+            req.file.path
+        );
+
+        return successResponse(
+            res,
+            {
+                oldDocument,
+                newDocument,
+                blockchainTx
+            },
+            "Document replaced successfully"
+        );
+
+    }
+    catch (error) {
+
+        console.log(
+            "REPLACE DOCUMENT ERROR:",
+            error?.message
+        );
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+    }
+
+};
 
 
 module.exports = {
@@ -630,6 +894,8 @@ module.exports = {
 
     rejectDocument,
 
-    uploadDocument
+    uploadDocument,
+
+    replaceDocument
 
 };
