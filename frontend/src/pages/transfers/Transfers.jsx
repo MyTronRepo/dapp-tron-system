@@ -238,42 +238,38 @@ alert(
   // CHECK BLOCKCHAIN TRANSFER
   // ==============================
 
-  const testBlockchainTransfer = async () => {
+const testBlockchainTransfer = async () => {
   try {
+    console.log("READING BLOCKCHAIN TRANSFER REQUEST...");
+
+    const transferId = 2;
+
+    const result = await getTransferRequest(transferId);
 
     console.log(
-      "CHECKING PREVIOUS TRANSACTION..."
-    );
-
-   const txid =
-  "6f15ee9ae79f9e35bb187269768e99d99d895b18d7a930f70858acfa2b2273f7";
-
-    const result =
-      await checkTransaction(txid);
-
-    console.log(
-      "FINAL TRANSACTION CHECK:",
+      "BLOCKCHAIN TRANSFER REQUEST:",
       result
     );
 
-    alert(
-      JSON.stringify(
-        result,
-        null,
-        2
-      )
-    );
-
+ alert(
+  JSON.stringify(
+    result,
+    (_, value) =>
+      typeof value === "bigint"
+        ? value.toString()
+        : value,
+    2
+  )
+);
   } catch (error) {
-
     console.error(
-      "TRANSACTION CHECK ERROR:",
+      "TRANSFER CHECK ERROR:",
       error
     );
 
     alert(
-      error?.message ||
-      "Failed to check transaction"
+      error.message ||
+      "Failed to read transfer request"
     );
   }
 };
@@ -285,8 +281,11 @@ alert(
   
 const testBlockchainOwners = async () => {
     try {
-        const propertyId =
-            "01ad0123-ce34-4b75-954f-e36079194d84";
+        const propertyId = form.propertyId.trim();
+
+if (!propertyId) {
+    throw new Error("Property ID is required");
+}
 
         console.log(
             "READING OWNERS FROM BLOCKCHAIN..."

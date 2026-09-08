@@ -11,7 +11,6 @@ const {
 } = require("../utils/responseHandler");
 
 const {
-    registerPropertyOnBlockchain,
     updatePropertyOnBlockchain,
     getPropertyFromBlockchain
 } = require("../services/tronService");
@@ -99,59 +98,6 @@ const registerProperty = async (req, res) => {
 
 
         let blockchainTxId = null;
-
-
-
-        try {
-
-
-            blockchainTxId =
-                await registerPropertyOnBlockchain({
-
-                    propertyId,
-
-                    province,
-
-                    city,
-
-                    district,
-
-                    parcelNumber,
-
-                    area,
-
-                    buildYear,
-
-                    usageType,
-
-                    constructionStatus,
-
-                    latitude,
-
-                    longitude
-
-                });
-
-
-        }
-        catch(error){
-
-
-            console.log(
-                "Blockchain registration failed:",
-                error.message
-            );
-
-
-            return errorResponse(
-                res,
-                "Blockchain registration failed",
-                500
-            );
-
-        }
-
-
 
 
 
