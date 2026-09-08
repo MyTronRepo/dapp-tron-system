@@ -52,6 +52,10 @@ const uploadToIPFS = async (filePath) => {
 
         const cid = response.data.IpfsHash;
 
+        console.log("PINATA RESPONSE:", response.data);
+console.log("PINATA CID:", response.data.IpfsHash);
+console.log("PINATA CID LENGTH:", response.data.IpfsHash?.length);   
+
         if (!cid) {
             throw new Error("CID was not returned from Pinata.");
         }
