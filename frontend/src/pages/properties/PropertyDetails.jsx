@@ -182,8 +182,22 @@ function PropertyDetails() {
 
       <h2>Owners</h2>
 
+<div style={{ marginBottom: "15px" }}>
+  <p>
+    <strong>Total Owners:</strong> {owners.length}
+  </p>
 
-      <table border="1">
+  <p>
+    <strong>Total Ownership:</strong>{" "}
+    {owners.reduce(
+      (total, owner) => total + Number(owner.share || 0),
+      0
+    )}
+    %
+  </p>
+</div>
+
+<table border="1">
 
         <thead>
 
