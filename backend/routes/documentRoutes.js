@@ -29,7 +29,8 @@ const {
     verifyDocument,
     rejectDocument,
     uploadDocument,
-    replaceDocument
+    replaceDocument,
+    revokeDocument
 } = require("../controllers/documentController");
 
 
@@ -119,6 +120,13 @@ router.put(
 );
 
 
+// REVOKE DOCUMENT
+router.put(
+    "/revoke/:documentId",
+    authenticate,
+    authorize("admin"),
+    revokeDocument
+);
 
 // UPLOAD DOCUMENT
 // REPLACE DOCUMENT

@@ -7,7 +7,8 @@ const {
     registerDocumentOnBlockchain,
     verifyDocumentOnBlockchain,
     replaceDocumentOnBlockchain,
-    getDocumentsFromBlockchain
+    getDocumentsFromBlockchain,
+    revokeDocumentOnBlockchain
 } = require("../services/tronService");
 
 const {
@@ -457,6 +458,86 @@ const rejectDocument = async(req,res)=>{
 
 };
 
+// REVOKE DOCUMENT
+const revokeDocument = async (req, res) => {
+    try {
+        const { documentId } = req.params;
+
+        const document = await Document.findOne({ documentId });
+
+        if (!document) {
+            return errorResponse(res, "Document not found", 404);
+        }
+
+        const blockchainDocuments =
+            await getDocumentsFromBlockchain(document.propertyId);
+
+        const documentIndex = blockchainDocuments.findIndex(
+            doc =>
+                String(doc.documentHash).toLowerCase() ===
+                ("0x" + document.fileHash).toLowerCase()
+        );
+
+        if (documentIndex === -1) {
+            return errorResponse(
+                res,
+                "Document not found on blockchain",
+                404
+            );
+        }
+
+        const blockchainTx =
+            await revokeDocumentOnBlockchain(
+                document.propertyId,
+                documentIndex
+            );
+
+        document.status = "Revoked";
+        document.revokedBy =
+            req.user?.walletAddress || "Admin";
+        document.revokedAt = new Date();
+        document.blockchainTxId = blockchainTx;
+
+        await document.save();
+
+        await createAuditLog({
+            action: "REVOKE_DOCUMENT",
+            entity: "Document",
+            entityId: document.documentId,
+            performedBy:
+                req.user?.walletAddress || "Admin",
+            role:
+                req.user?.role || "Admin",
+            ipAddress: req.ip,
+            details: {
+                propertyId: document.propertyId,
+                blockchainTxId: blockchainTx
+            }
+        });
+
+        return successResponse(
+            res,
+            {
+                document,
+                blockchainTx
+            },
+            "Document revoked successfully"
+        );
+
+    } catch (error) {
+        console.log(
+            "REVOKE DOCUMENT ERROR:",
+            error?.message
+        );
+
+        return errorResponse(
+            res,
+            error.message,
+            500
+        );
+    }
+};
+
 // UPLOAD DOCUMENT
 const uploadDocument = async(req,res)=>{
 
@@ -896,6 +977,8 @@ module.exports = {
 
     uploadDocument,
 
-    replaceDocument
+    replaceDocument,
+
+    revokeDocument
 
 };

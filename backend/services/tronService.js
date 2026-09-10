@@ -1,12 +1,11 @@
-
-
 require("dotenv").config();
 
 const TronWeb = require("tronweb");
 
+const { Interface } = require("ethers");
+
 const contractArtifact =
     require("../../tron-deploy/build/contracts/DappTronSystem.json");
-
 
 /*
 |--------------------------------------------------------------------------
@@ -60,24 +59,10 @@ const registerPropertyOnBlockchain = async ({
             tronWeb.defaultAddress.base58
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create contract instance
-        |--------------------------------------------------------------------------
-        */
-
         const contract = tronWeb.contract(
             contractArtifact.abi,
             process.env.CONTRACT_ADDRESS
         );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Convert values
-        |--------------------------------------------------------------------------
-        */
 
         const areaValue = Number(area);
 
@@ -88,13 +73,6 @@ const registerPropertyOnBlockchain = async ({
 
         const longitudeValue =
             Math.round(Number(longitude) * 1000000);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Register property
-        |--------------------------------------------------------------------------
-        */
 
         const tx = await contract
             .registerProperty(
@@ -114,12 +92,10 @@ const registerPropertyOnBlockchain = async ({
                 feeLimit: 100000000
             });
 
-
         console.log(
             "PROPERTY REGISTERED TX:",
             tx
         );
-
 
         return tx;
 
@@ -267,6 +243,7 @@ const getPropertyFromBlockchain = async (propertyId) => {
 
 };
 
+
 /*
 |--------------------------------------------------------------------------
 | UPDATE PROPERTY ON BLOCKCHAIN
@@ -319,23 +296,23 @@ const updatePropertyOnBlockchain = async ({
         const longitudeValue =
             Math.round(Number(longitude) * 1000000);
 
-    const tx = await contract
-    .updateProperty([
-        propertyId,
-        province,
-        city,
-        district,
-        parcelNumber,
-        areaValue,
-        buildYearValue,
-        usageType,
-        constructionStatus,
-        latitudeValue,
-        longitudeValue
-    ])
-    .send({
-        feeLimit: 100000000
-    });
+        const tx = await contract
+            .updateProperty([
+                propertyId,
+                province,
+                city,
+                district,
+                parcelNumber,
+                areaValue,
+                buildYearValue,
+                usageType,
+                constructionStatus,
+                latitudeValue,
+                longitudeValue
+            ])
+            .send({
+                feeLimit: 100000000
+            });
 
         console.log(
             "PROPERTY UPDATED TX:",
@@ -361,7 +338,12 @@ const updatePropertyOnBlockchain = async ({
 
 };
 
-// GET ALL PROPERTY IDS FROM BLOCKCHAIN
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL PROPERTY IDS FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
 
 const getPropertyIdsFromBlockchain = async () => {
 
@@ -412,53 +394,12 @@ const getPropertyIdsFromBlockchain = async () => {
     }
 };
 
+
 /*
 |--------------------------------------------------------------------------
-| GET DOCUMENTS FROM BLOCKCHAIN
+| REGISTER DOCUMENT ON BLOCKCHAIN
 |--------------------------------------------------------------------------
 */
-
-const getDocumentsFromBlockchain = async (propertyId) => {
-
-    try {
-
-        console.log(
-            "READING DOCUMENTS FROM BLOCKCHAIN:",
-            propertyId
-        );
-
-        const contract = await tronWeb
-            .contract()
-            .at(process.env.CONTRACT_ADDRESS);
-
-        const documents = await contract.methods
-            .getDocuments(propertyId)
-            .call();
-
-        console.log(
-            "BLOCKCHAIN DOCUMENTS:",
-            documents
-        );
-
-        return documents;
-
-    } catch (error) {
-
-        console.log(
-            "GET DOCUMENTS BLOCKCHAIN ERROR:",
-            error?.message
-        );
-
-        console.log(
-            "GET DOCUMENTS BLOCKCHAIN ERROR FULL:",
-            error
-        );
-
-        throw error;
-
-    }
-
-};
 
 const registerDocumentOnBlockchain = async (
     propertyId,
@@ -473,15 +414,30 @@ const registerDocumentOnBlockchain = async (
             propertyId
         );
 
+        console.log(
+            "DOCUMENT HASH:",
+            documentHash
+        );
 
-        const contract = await tronWeb.contract(
+        console.log(
+            "DOCUMENT URI:",
+            documentURI
+        );
+
+        console.log(
+            "BLOCKCHAIN CONTRACT:",
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const contract = tronWeb.contract(
             contractArtifact.abi,
             process.env.CONTRACT_ADDRESS
         );
 
-
-        const formattedHash = "0x" + documentHash;
-
+        const formattedHash =
+            documentHash.startsWith("0x")
+                ? documentHash
+                : "0x" + documentHash;
 
         const tx = await contract
             .registerDocument(
@@ -493,36 +449,276 @@ const registerDocumentOnBlockchain = async (
                 feeLimit: 100000000
             });
 
-
         console.log(
-            "DOCUMENT REGISTERED TX:",
+            "DOCUMENT REGISTERED BLOCKCHAIN TX:",
             tx
         );
 
-
         return tx;
-
 
     } catch (error) {
 
         console.log(
-            "DOCUMENT REGISTER ERROR:",
+            "REGISTER DOCUMENT BLOCKCHAIN ERROR:",
             error?.message
         );
 
-
         console.log(
-            "DOCUMENT REGISTER ERROR FULL:",
+            "REGISTER DOCUMENT BLOCKCHAIN ERROR FULL:",
             error
         );
 
-
         throw error;
-
     }
 
 };
 
+
+
+/*
+|--------------------------------------------------------------------------
+| GET DOCUMENTS FROM BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const getDocumentsFromBlockchain = async (propertyId) => {
+    try {
+        console.log(
+            "READING DOCUMENTS FROM BLOCKCHAIN:",
+            propertyId
+        );
+
+        console.log(
+            "BLOCKCHAIN CONTRACT:",
+            process.env.CONTRACT_ADDRESS
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * Use the contract ABI to encode getDocuments(string)
+         * ------------------------------------------------------------
+         */
+
+        const iface = new Interface(contractArtifact.abi);
+
+        const functionData = iface.encodeFunctionData(
+            "getDocuments",
+            [propertyId]
+        );
+
+        const functionSelector =
+            functionData.slice(0, 10);
+
+        const parameter =
+            functionData.slice(10);
+
+        console.log(
+            "GET DOCUMENTS FUNCTION SELECTOR:",
+            functionSelector
+        );
+
+        console.log(
+            "GET DOCUMENTS PARAMETER:",
+            parameter
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * Call TRON constant contract directly.
+         *
+         * TronWeb 5.3.5 may expose tuple[] returned by Solidity
+         * as:
+         *
+         * [
+         *     [],
+         *     [],
+         *     []
+         * ]
+         *
+         * Therefore we bypass TronWeb's tuple conversion and decode
+         * the raw constant_result ourselves using ethers.
+         * ------------------------------------------------------------
+         */
+
+        const response = await fetch(
+            "https://nile.trongrid.io/wallet/triggerconstantcontract",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    owner_address:
+                        tronWeb.defaultAddress.base58,
+
+                    contract_address:
+                        process.env.CONTRACT_ADDRESS,
+
+                    function_selector:
+                        "getDocuments(string)",
+
+                    parameter,
+
+                    visible: true
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `TRON constant call failed: HTTP ${response.status}`
+            );
+        }
+
+        const result = await response.json();
+
+        console.log(
+            "TRON CONSTANT CONTRACT RESPONSE:",
+            JSON.stringify(result, null, 2)
+        );
+
+        if (
+            !result ||
+            !Array.isArray(result.constant_result) ||
+            result.constant_result.length === 0
+        ) {
+            throw new Error(
+                "Blockchain returned no constant result for getDocuments"
+            );
+        }
+
+        const rawResult =
+            "0x" + result.constant_result[0];
+
+        console.log(
+            "GET DOCUMENTS RAW HEX:",
+            rawResult
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * Decode the raw Solidity return value.
+         * ------------------------------------------------------------
+         */
+
+        const decoded =
+            iface.decodeFunctionResult(
+                "getDocuments",
+                rawResult
+            );
+
+        console.log(
+            "GET DOCUMENTS DECODED:",
+            decoded
+        );
+
+        /*
+         * decodeFunctionResult returns a Result object.
+         *
+         * The first output is the Document[] array.
+         */
+
+        const documents =
+            decoded[0];
+
+        console.log(
+            "DECODED DOCUMENTS LENGTH:",
+            documents.length
+        );
+
+        /*
+         * ------------------------------------------------------------
+         * Normalize decoded tuples
+         * ------------------------------------------------------------
+         */
+
+        const normalizedDocuments =
+            documents.map((doc, index) => {
+
+                const propertyIdValue =
+                    doc.propertyId ??
+                    doc[0];
+
+                const documentHashValue =
+                    doc.documentHash ??
+                    doc[1];
+
+                const documentURIValue =
+                    doc.documentURI ??
+                    doc[2];
+
+                const issueDateValue =
+                    doc.issueDate ??
+                    doc[3];
+
+                const statusValue =
+                    doc.status ??
+                    doc[4];
+
+                return {
+                    index,
+
+                    propertyId:
+                        propertyIdValue !== undefined
+                            ? String(propertyIdValue)
+                            : null,
+
+                    documentHash:
+                        documentHashValue !== undefined
+                            ? String(documentHashValue)
+                            : null,
+
+                    documentURI:
+                        documentURIValue !== undefined
+                            ? String(documentURIValue)
+                            : null,
+
+                    issueDate:
+                        issueDateValue !== undefined
+                            ? String(issueDateValue)
+                            : null,
+
+                    status:
+                        statusValue !== undefined
+                            ? Number(statusValue.toString())
+                            : null
+                };
+            });
+
+        console.log(
+            "NORMALIZED DOCUMENTS:",
+            JSON.stringify(
+                normalizedDocuments,
+                null,
+                2
+            )
+        );
+
+        return normalizedDocuments;
+
+    } catch (error) {
+
+        console.log(
+            "GET DOCUMENTS BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "GET DOCUMENTS BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+    }
+};
+
+/*
+|--------------------------------------------------------------------------
+| VERIFY DOCUMENT ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
 
 const verifyDocumentOnBlockchain = async (
     propertyId,
@@ -537,12 +733,10 @@ const verifyDocumentOnBlockchain = async (
             documentIndex
         );
 
-
         const contract = await tronWeb.contract(
             contractArtifact.abi,
             process.env.CONTRACT_ADDRESS
         );
-
 
         const tx = await contract
             .verifyDocument(
@@ -553,34 +747,35 @@ const verifyDocumentOnBlockchain = async (
                 feeLimit: 100000000
             });
 
-
         console.log(
             "DOCUMENT VERIFIED BLOCKCHAIN TX:",
             tx
         );
 
-
         return tx;
 
-
-    } catch(error){
+    } catch (error) {
 
         console.log(
             "VERIFY DOCUMENT BLOCKCHAIN ERROR:",
-            error.message
+            error?.message
         );
 
-
         console.log(
+            "VERIFY DOCUMENT BLOCKCHAIN ERROR FULL:",
             error
         );
 
-
         throw error;
-
     }
-
 };
+
+
+/*
+|--------------------------------------------------------------------------
+| REPLACE DOCUMENT ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
 
 const replaceDocumentOnBlockchain = async (
     propertyId,
@@ -602,7 +797,10 @@ const replaceDocumentOnBlockchain = async (
             process.env.CONTRACT_ADDRESS
         );
 
-        const formattedHash = "0x" + newDocumentHash;
+        const formattedHash =
+            newDocumentHash.startsWith("0x")
+                ? newDocumentHash
+                : "0x" + newDocumentHash;
 
         const tx = await contract
             .replaceDocument(
@@ -636,6 +834,145 @@ const replaceDocumentOnBlockchain = async (
 
         throw error;
     }
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| REVOKE DOCUMENT ON BLOCKCHAIN
+|--------------------------------------------------------------------------
+*/
+
+const revokeDocumentOnBlockchain = async (
+    propertyId,
+    documentIndex
+) => {
+
+    try {
+
+        console.log(
+            "REVOKING DOCUMENT ON BLOCKCHAIN:",
+            propertyId,
+            documentIndex
+        );
+
+        const contract = tronWeb.contract(
+            contractArtifact.abi,
+            process.env.CONTRACT_ADDRESS
+        );
+
+        const tx = await contract
+            .revokeDocument(
+                propertyId,
+                documentIndex
+            )
+            .send({
+                feeLimit: 100000000
+            });
+
+        console.log(
+            "DOCUMENT REVOKE TX ID:",
+            tx
+        );
+
+        /*
+         * ----------------------------------------------------------
+         * IMPORTANT:
+         * TronWeb returns the transaction ID immediately.
+         * That does NOT necessarily mean the transaction succeeded.
+         *
+         * We must query the transaction result from the blockchain.
+         * ----------------------------------------------------------
+         */
+
+        let transactionInfo = null;
+
+        for (let attempt = 1; attempt <= 10; attempt++) {
+
+            console.log(
+                `CHECKING REVOKE TRANSACTION (${attempt}/10):`,
+                tx
+            );
+
+            transactionInfo =
+                await tronWeb.trx.getTransaction(tx);
+
+            if (
+                transactionInfo &&
+                transactionInfo.ret &&
+                transactionInfo.ret.length > 0
+            ) {
+                break;
+            }
+
+            await new Promise(resolve =>
+                setTimeout(resolve, 1000)
+            );
+        }
+
+        console.log(
+            "REVOKE TRANSACTION INFO:",
+            JSON.stringify(
+                transactionInfo,
+                null,
+                2
+            )
+        );
+
+        const contractRet =
+            transactionInfo?.ret?.[0]?.contractRet;
+
+        console.log(
+            "REVOKE TRANSACTION RESULT:",
+            contractRet
+        );
+
+        /*
+         * ----------------------------------------------------------
+         * Transaction failed
+         * ----------------------------------------------------------
+         */
+
+        if (contractRet !== "SUCCESS") {
+
+            const error = new Error(
+                `Blockchain transaction failed: ${contractRet || "UNKNOWN"}`
+            );
+
+            error.code = contractRet || "UNKNOWN";
+            error.transactionId = tx;
+            error.transactionInfo = transactionInfo;
+
+            throw error;
+        }
+
+        /*
+         * ----------------------------------------------------------
+         * Transaction succeeded
+         * ----------------------------------------------------------
+         */
+
+        console.log(
+            "DOCUMENT REVOKED SUCCESSFULLY ON BLOCKCHAIN:",
+            tx
+        );
+
+        return tx;
+
+    } catch (error) {
+
+        console.log(
+            "REVOKE DOCUMENT BLOCKCHAIN ERROR:",
+            error?.message
+        );
+
+        console.log(
+            "REVOKE DOCUMENT BLOCKCHAIN ERROR FULL:",
+            error
+        );
+
+        throw error;
+    }
 
 };
 
@@ -645,7 +982,9 @@ const replaceDocumentOnBlockchain = async (
 |--------------------------------------------------------------------------
 */
 
-const getTransferRequestFromBlockchain = async (transferId) => {
+const getTransferRequestFromBlockchain = async (
+    transferId
+) => {
 
     try {
 
@@ -697,7 +1036,9 @@ const getTransferRequestFromBlockchain = async (transferId) => {
 |--------------------------------------------------------------------------
 */
 
-const getTransferHistoryFromBlockchain = async (propertyId) => {
+const getTransferHistoryFromBlockchain = async (
+    propertyId
+) => {
 
     try {
 
@@ -742,12 +1083,12 @@ const getTransferHistoryFromBlockchain = async (propertyId) => {
 
 };
 
+
 /*
 |--------------------------------------------------------------------------
 | EXPORTS
 |--------------------------------------------------------------------------
 */
-
 
 module.exports = {
 
@@ -755,19 +1096,21 @@ module.exports = {
 
     registerPropertyOnBlockchain,
 
-    verifyDocumentOnBlockchain,
-
-    replaceDocumentOnBlockchain,
-
     updatePropertyOnBlockchain,
 
     getPropertyFromBlockchain,
 
     getPropertyIdsFromBlockchain,
 
+    registerDocumentOnBlockchain,
+
     getDocumentsFromBlockchain,
 
-    registerDocumentOnBlockchain,
+    verifyDocumentOnBlockchain,
+
+    replaceDocumentOnBlockchain,
+
+    revokeDocumentOnBlockchain,
 
     getTransferRequestFromBlockchain,
 
