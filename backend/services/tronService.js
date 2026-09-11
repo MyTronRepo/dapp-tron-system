@@ -22,6 +22,156 @@ const tronWeb = new TronWeb({
 });
 
 
+const getTransactionCost = async (txid) => {
+    if (!txid) {
+        throw new Error("Transaction ID required");
+    }
+
+    let transaction = null;
+
+    // --------------------------------------------------
+    // STEP 1: Wait for transaction confirmation
+    // --------------------------------------------------
+
+    for (let attempt = 1; attempt <= 20; attempt++) {
+
+        console.log(
+            `CHECKING TRANSACTION STATUS (${attempt}/20):`,
+            txid
+        );
+
+        transaction =
+            await tronWeb.trx.getTransaction(txid);
+
+        console.log(
+            "TRANSACTION STATUS:",
+            JSON.stringify(
+                transaction,
+                null,
+                2
+            )
+        );
+
+        if (
+            transaction &&
+            transaction.txID &&
+            transaction.ret &&
+            transaction.ret[0]?.contractRet === "SUCCESS"
+        ) {
+            console.log(
+                "TRANSACTION CONFIRMED:",
+                txid
+            );
+
+            break;
+        }
+
+        await new Promise(
+            resolve =>
+                setTimeout(resolve, 1500)
+        );
+    }
+
+    if (
+        !transaction ||
+        transaction.ret?.[0]?.contractRet !== "SUCCESS"
+    ) {
+        throw new Error(
+            "Transaction was not confirmed successfully"
+        );
+    }
+
+
+    // --------------------------------------------------
+    // STEP 2: Wait for transaction cost information
+    // --------------------------------------------------
+
+    let transactionInfo = null;
+
+    for (let attempt = 1; attempt <= 30; attempt++) {
+
+        console.log(
+            `CHECKING TRANSACTION COST (${attempt}/30):`,
+            txid
+        );
+
+        transactionInfo =
+            await tronWeb.trx.getTransactionInfo(txid);
+
+        console.log(
+            "TRANSACTION COST INFO:",
+            JSON.stringify(
+                transactionInfo,
+                null,
+                2
+            )
+        );
+
+        const receipt =
+            transactionInfo?.receipt;
+
+        if (
+            transactionInfo?.blockNumber !== undefined &&
+            receipt
+        ) {
+
+            const energyUsed =
+                Number(
+                    receipt.energy_usage_total || 0
+                );
+
+            const energyFee =
+                Number(
+                    receipt.energy_fee || 0
+                );
+
+            const bandwidthUsed =
+                Number(
+                    receipt.net_usage || 0
+                );
+
+            const bandwidthFee =
+                Number(
+                    receipt.net_fee || 0
+                );
+
+            const totalFee =
+                Number(
+                    transactionInfo.fee || 0
+                );
+
+            if (
+                energyUsed > 0 ||
+                energyFee > 0 ||
+                bandwidthUsed > 0 ||
+                bandwidthFee > 0 ||
+                totalFee > 0
+            ) {
+
+                return {
+                    txid,
+                    energyUsed,
+                    energyFee,
+                    bandwidthUsed,
+                    bandwidthFee,
+                    totalFee,
+                    totalTRX:
+                        totalFee / 1_000_000
+                };
+            }
+        }
+
+        await new Promise(
+            resolve =>
+                setTimeout(resolve, 2000)
+        );
+    }
+
+    throw new Error(
+        "Transaction cost information not available yet"
+    );
+};
+
 /*
 |--------------------------------------------------------------------------
 | REGISTER PROPERTY ON BLOCKCHAIN
@@ -1114,6 +1264,8 @@ module.exports = {
 
     getTransferRequestFromBlockchain,
 
-    getTransferHistoryFromBlockchain
+    getTransferHistoryFromBlockchain,
 
+    getTransactionCost
+    
 };

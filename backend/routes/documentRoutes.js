@@ -37,7 +37,6 @@ const {
 
 // REGISTER DOCUMENT
 router.post(
-
     "/register",
 
     authenticate,
@@ -46,12 +45,13 @@ router.post(
         "owner"
     ),
 
+    upload.single("document"),
+
     documentRegisterValidation,
 
     validate,
 
     registerDocument
-
 );
 
 
@@ -86,6 +86,20 @@ router.get(
 );
 
 
+// UPLOAD DOCUMENT
+router.post(
+    "/upload/:documentId",
+
+    authenticate,
+
+    authorize(
+        "owner"
+    ),
+
+    upload.single("document"),
+
+    uploadDocument
+);
 
 // VERIFY DOCUMENT
 router.put(

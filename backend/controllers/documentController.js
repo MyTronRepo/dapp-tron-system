@@ -2,13 +2,15 @@ const { v4: uuidv4 } = require("uuid");
 
 const Document = require("../models/Document");
 const Property = require("../models/Property");
+const TransactionCost = require("../models/TransactionCost");
 
 const {
     registerDocumentOnBlockchain,
     verifyDocumentOnBlockchain,
     replaceDocumentOnBlockchain,
     getDocumentsFromBlockchain,
-    revokeDocumentOnBlockchain
+    revokeDocumentOnBlockchain,
+    getTransactionCost
 } = require("../services/tronService");
 
 const {
@@ -31,6 +33,38 @@ const {
     createAuditLog
 } = require("../utils/auditLogger");
 
+
+const saveTransactionCost = async (
+    txid,
+    operation
+) => {
+    const cost =
+        await getTransactionCost(txid);
+
+    console.log(
+        "TRANSACTION COST BEFORE MONGO:",
+        cost
+    );
+
+    return await TransactionCost.findOneAndUpdate(
+        { txid: cost.txid },
+        {
+            txid: cost.txid,
+            operation,
+            energyUsed: cost.energyUsed,
+            energyFee: cost.energyFee,
+            bandwidthUsed: cost.bandwidthUsed,
+            bandwidthFee: cost.bandwidthFee,
+            totalFee: cost.totalFee,
+            totalTRX: cost.totalTRX
+        },
+        {
+            new: true,
+            upsert: true,
+            setDefaultsOnInsert: true
+        }
+    );
+};
 
 // REGISTER DOCUMENT
 const registerDocument = async (req, res) => {
@@ -65,8 +99,6 @@ const registerDocument = async (req, res) => {
             await Property.findOne({
                 propertyId
             });
-
-
 
 
         if (!property) {
@@ -246,6 +278,7 @@ const getDocumentById = async (req,res)=>{
 };
 
 
+
 // VERIFY DOCUMENT
 const verifyDocument = async(req,res)=>{
 
@@ -255,23 +288,12 @@ const verifyDocument = async(req,res)=>{
             documentId
         } = req.params;
 
-           
 
-            const document =
-    await Document.findOne({
-        documentId
-    });
+        const document =
+            await Document.findOne({
+                documentId
+            });
 
-
-if(!document){
-
-    return errorResponse(
-        res,
-        "Document not found",
-        404
-    );
-
-}
 
         if(!document){
 
@@ -283,27 +305,30 @@ if(!document){
 
         }
 
-if (document.status === "Revoked") {
 
-    return errorResponse(
-        res,
-        "Document has been revoked and cannot be verified",
-        400
-    );
+        if (document.status === "Revoked") {
 
-}
+            return errorResponse(
+                res,
+                "Document has been revoked and cannot be verified",
+                400
+            );
+
+        }
+
 
         /*
-|--------------------------------------------------------------------------
-| VERIFY ON BLOCKCHAIN
-|--------------------------------------------------------------------------
-*/
+        |--------------------------------------------------------------------------
+        | VERIFY ON BLOCKCHAIN
+        |--------------------------------------------------------------------------
+        */
 
-const blockchainTx =
-    await verifyDocumentOnBlockchain(
-        document.propertyId,
-        0
-    );
+        const blockchainTx =
+            await verifyDocumentOnBlockchain(
+                document.propertyId,
+                0
+            );
+
 
         document.status = "Verified";
 
@@ -317,11 +342,16 @@ const blockchainTx =
 
 
         document.blockchainTxId =
-    blockchainTx;
+            blockchainTx;
 
 
         await document.save();
 
+
+        await saveTransactionCost(
+            blockchainTx,
+            "VERIFY_DOCUMENT"
+        );
 
 
         /*
@@ -352,7 +382,7 @@ const blockchainTx =
                     document.propertyId,
 
                 blockchainTxId:
-    blockchainTx
+                    blockchainTx
 
             }
 
@@ -360,14 +390,14 @@ const blockchainTx =
 
 
 
-       return successResponse(
-    res,
-    {
-        document,
-        blockchainTx
-    },
-    "Document verified successfully"
-);
+        return successResponse(
+            res,
+            {
+                document,
+                blockchainTx
+            },
+            "Document verified successfully"
+        );
 
     }
     catch(error){
@@ -387,6 +417,8 @@ const blockchainTx =
     }
 
 };
+
+
 
 // REJECT DOCUMENT
 const rejectDocument = async(req,res)=>{
@@ -466,33 +498,64 @@ const rejectDocument = async(req,res)=>{
 
 };
 
+
+
 // REVOKE DOCUMENT
 const revokeDocument = async (req, res) => {
-    try {
-        const { documentId } = req.params;
 
-        const document = await Document.findOne({ documentId });
+    try {
+
+        const {
+            documentId
+        } = req.params;
+
+
+        const document =
+            await Document.findOne({
+                documentId
+            });
+
 
         if (!document) {
-            return errorResponse(res, "Document not found", 404);
+
+            return errorResponse(
+                res,
+                "Document not found",
+                404
+            );
+
         }
 
-        const blockchainDocuments =
-            await getDocumentsFromBlockchain(document.propertyId);
 
-        const documentIndex = blockchainDocuments.findIndex(
-            doc =>
-                String(doc.documentHash).toLowerCase() ===
-                ("0x" + document.fileHash).toLowerCase()
-        );
+        const blockchainDocuments =
+            await getDocumentsFromBlockchain(
+                document.propertyId
+            );
+
+
+        const documentIndex =
+            blockchainDocuments.findIndex(
+                doc =>
+                    String(
+                        doc.documentHash
+                    ).toLowerCase() ===
+                    (
+                        "0x" +
+                        document.fileHash
+                    ).toLowerCase()
+            );
+
 
         if (documentIndex === -1) {
+
             return errorResponse(
                 res,
                 "Document not found on blockchain",
                 404
             );
+
         }
+
 
         const blockchainTx =
             await revokeDocumentOnBlockchain(
@@ -500,28 +563,56 @@ const revokeDocument = async (req, res) => {
                 documentIndex
             );
 
+
         document.status = "Revoked";
+
         document.revokedBy =
             req.user?.walletAddress || "Admin";
-        document.revokedAt = new Date();
-        document.blockchainTxId = blockchainTx;
+
+        document.revokedAt =
+            new Date();
+
+        document.blockchainTxId =
+            blockchainTx;
+
 
         await document.save();
 
+
+        await saveTransactionCost(
+            blockchainTx,
+            "REVOKE_DOCUMENT"
+        );
+
+
         await createAuditLog({
+
             action: "REVOKE_DOCUMENT",
+
             entity: "Document",
+
             entityId: document.documentId,
+
             performedBy:
                 req.user?.walletAddress || "Admin",
+
             role:
                 req.user?.role || "Admin",
+
             ipAddress: req.ip,
+
             details: {
-                propertyId: document.propertyId,
-                blockchainTxId: blockchainTx
+
+                propertyId:
+                    document.propertyId,
+
+                blockchainTxId:
+                    blockchainTx
+
             }
+
         });
+
 
         return successResponse(
             res,
@@ -532,25 +623,32 @@ const revokeDocument = async (req, res) => {
             "Document revoked successfully"
         );
 
-    } catch (error) {
+
+    }
+    catch (error) {
+
         console.log(
             "REVOKE DOCUMENT ERROR:",
             error?.message
         );
+
 
         return errorResponse(
             res,
             error.message,
             500
         );
+
     }
+
 };
+
+
 
 // UPLOAD DOCUMENT
 const uploadDocument = async(req,res)=>{
 
     try{
-
 
         const {
             documentId
@@ -599,9 +697,15 @@ const uploadDocument = async(req,res)=>{
             ).toLowerCase();
 
 
-        if(!allowedExtensions.includes(extension)){
+        if(
+            !allowedExtensions.includes(
+                extension
+            )
+        ){
 
-            fs.unlinkSync(req.file.path);
+            fs.unlinkSync(
+                req.file.path
+            );
 
             return errorResponse(
                 res,
@@ -616,9 +720,14 @@ const uploadDocument = async(req,res)=>{
             10 * 1024 * 1024;
 
 
-        if(req.file.size > maxFileSize){
+        if(
+            req.file.size >
+            maxFileSize
+        ){
 
-            fs.unlinkSync(req.file.path);
+            fs.unlinkSync(
+                req.file.path
+            );
 
             return errorResponse(
                 res,
@@ -641,22 +750,34 @@ const uploadDocument = async(req,res)=>{
             );
 
 
-        document.fileHash = hash;
-
-        document.documentURI = ipfsResult.cid;
-
-
-     const tx =
-    await registerDocumentOnBlockchain(
-        document.propertyId,
-        hash,
-        ipfsResult.cid
-    );
+        document.fileHash =
+            hash;
 
 
-document.blockchainTxId = tx;
+        document.documentURI =
+            ipfsResult.cid;
 
-await document.save();
+
+        const tx =
+            await registerDocumentOnBlockchain(
+                document.propertyId,
+                hash,
+                ipfsResult.cid
+            );
+
+
+        document.blockchainTxId =
+            tx;
+
+
+        await document.save();
+
+
+        await saveTransactionCost(
+            tx,
+            "UPLOAD_DOCUMENT"
+        );
+
 
         await createAuditLog({
 
@@ -675,8 +796,13 @@ await document.save();
             ipAddress:req.ip,
 
             details:{
-                documentURI: ipfsResult.cid,
-                documentHash: hash
+
+                documentURI:
+                    ipfsResult.cid,
+
+                documentHash:
+                    hash
+
             }
 
         });
@@ -707,32 +833,45 @@ await document.save();
 
 };
 
+
+
 // REPLACE DOCUMENT
 const replaceDocument = async (req, res) => {
 
     try {
 
-        const { documentId } = req.params;
-
-        const oldDocument = await Document.findOne({
+        const {
             documentId
-        });
+        } = req.params;
+
+
+        const oldDocument =
+            await Document.findOne({
+                documentId
+            });
+
 
         if (!oldDocument) {
+
             return errorResponse(
                 res,
                 "Document not found",
                 404
             );
+
         }
 
+
         if (!req.file) {
+
             return errorResponse(
                 res,
                 "No file uploaded",
                 400
             );
+
         }
+
 
         const allowedExtensions = [
             ".pdf",
@@ -741,35 +880,53 @@ const replaceDocument = async (req, res) => {
             ".png"
         ];
 
+
         const extension =
             path.extname(
                 req.file.originalname
             ).toLowerCase();
 
-        if (!allowedExtensions.includes(extension)) {
 
-            fs.unlinkSync(req.file.path);
+        if (
+            !allowedExtensions.includes(
+                extension
+            )
+        ) {
+
+            fs.unlinkSync(
+                req.file.path
+            );
 
             return errorResponse(
                 res,
                 "Unsupported file type",
                 400
             );
+
         }
+
 
         const maxFileSize =
             10 * 1024 * 1024;
 
-        if (req.file.size > maxFileSize) {
 
-            fs.unlinkSync(req.file.path);
+        if (
+            req.file.size >
+            maxFileSize
+        ) {
+
+            fs.unlinkSync(
+                req.file.path
+            );
 
             return errorResponse(
                 res,
                 "File size exceeds 10MB",
                 400
             );
+
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -782,6 +939,7 @@ const replaceDocument = async (req, res) => {
                 req.file.path
             );
 
+
         /*
         |--------------------------------------------------------------------------
         | Upload new document to IPFS
@@ -793,6 +951,7 @@ const replaceDocument = async (req, res) => {
                 req.file.path
             );
 
+
         /*
         |--------------------------------------------------------------------------
         | Find old document index on blockchain
@@ -800,30 +959,39 @@ const replaceDocument = async (req, res) => {
         */
 
         const blockchainDocuments =
-    await getDocumentsFromBlockchain(
-        oldDocument.propertyId
-    );
+            await getDocumentsFromBlockchain(
+                oldDocument.propertyId
+            );
+
 
         const documentIndex =
             blockchainDocuments.findIndex(
                 doc =>
-                    String(doc.documentHash)
-                        .toLowerCase()
-                        ===
-                    ("0x" + oldDocument.fileHash)
-                        .toLowerCase()
+                    String(
+                        doc.documentHash
+                    ).toLowerCase()
+                    ===
+                    (
+                        "0x" +
+                        oldDocument.fileHash
+                    ).toLowerCase()
             );
+
 
         if (documentIndex === -1) {
 
-            fs.unlinkSync(req.file.path);
+            fs.unlinkSync(
+                req.file.path
+            );
 
             return errorResponse(
                 res,
                 "Document not found on blockchain",
                 404
             );
+
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -839,15 +1007,25 @@ const replaceDocument = async (req, res) => {
                 ipfsResult.cid
             );
 
+
+        await saveTransactionCost(
+            blockchainTx,
+            "REPLACE_DOCUMENT"
+        );
+
+
         /*
         |--------------------------------------------------------------------------
         | Update old MongoDB document
         |--------------------------------------------------------------------------
         */
 
-        oldDocument.status = "Revoked";
+        oldDocument.status =
+            "Revoked";
+
 
         await oldDocument.save();
+
 
         /*
         |--------------------------------------------------------------------------
@@ -858,7 +1036,8 @@ const replaceDocument = async (req, res) => {
         const newDocument =
             await Document.create({
 
-                documentId: uuidv4(),
+                documentId:
+                    uuidv4(),
 
                 propertyId:
                     oldDocument.propertyId,
@@ -879,17 +1058,22 @@ const replaceDocument = async (req, res) => {
                     req.user?.walletAddress ||
                     oldDocument.uploadedBy,
 
-                status: "Pending",
+                status:
+                    "Pending",
 
                 version:
-                    Number(oldDocument.version || 1) + 1,
+                    Number(
+                        oldDocument.version || 1
+                    ) + 1,
 
                 replacedDocumentId:
                     oldDocument.documentId,
 
                 blockchainTxId:
                     blockchainTx
+
             });
+
 
         /*
         |--------------------------------------------------------------------------
@@ -899,9 +1083,11 @@ const replaceDocument = async (req, res) => {
 
         await createAuditLog({
 
-            action: "REPLACE_DOCUMENT",
+            action:
+                "REPLACE_DOCUMENT",
 
-            entity: "Document",
+            entity:
+                "Document",
 
             entityId:
                 newDocument.documentId,
@@ -914,7 +1100,8 @@ const replaceDocument = async (req, res) => {
                 req.user?.role ||
                 "Owner",
 
-            ipAddress: req.ip,
+            ipAddress:
+                req.ip,
 
             details: {
 
@@ -935,13 +1122,16 @@ const replaceDocument = async (req, res) => {
 
                 blockchainTxId:
                     blockchainTx
+
             }
 
         });
 
+
         fs.unlinkSync(
             req.file.path
         );
+
 
         return successResponse(
             res,
@@ -953,6 +1143,7 @@ const replaceDocument = async (req, res) => {
             "Document replaced successfully"
         );
 
+
     }
     catch (error) {
 
@@ -961,14 +1152,17 @@ const replaceDocument = async (req, res) => {
             error?.message
         );
 
+
         return errorResponse(
             res,
             error.message,
             500
         );
+
     }
 
 };
+
 
 
 module.exports = {
