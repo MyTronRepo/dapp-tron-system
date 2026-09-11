@@ -283,7 +283,15 @@ if(!document){
 
         }
 
+if (document.status === "Revoked") {
 
+    return errorResponse(
+        res,
+        "Document has been revoked and cannot be verified",
+        400
+    );
+
+}
 
         /*
 |--------------------------------------------------------------------------
