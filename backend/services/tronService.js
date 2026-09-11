@@ -643,24 +643,19 @@ const getDocumentsFromBlockchain = async (propertyId) => {
             process.env.CONTRACT_ADDRESS
         );
 
-        /*
-         * ------------------------------------------------------------
-         * Use the contract ABI to encode getDocuments(string)
-         * ------------------------------------------------------------
-         */
-
         const iface = new Interface(contractArtifact.abi);
 
-        const functionData = iface.encodeFunctionData(
-            "getDocuments",
-            [propertyId]
-        );
-
-        const functionSelector =
-            functionData.slice(0, 10);
+        const functionData =
+            iface.encodeFunctionData(
+                "getDocuments",
+                [propertyId]
+            );
 
         const parameter =
             functionData.slice(10);
+
+        const functionSelector =
+            functionData.slice(0, 10);
 
         console.log(
             "GET DOCUMENTS FUNCTION SELECTOR:",
@@ -672,86 +667,153 @@ const getDocumentsFromBlockchain = async (propertyId) => {
             parameter
         );
 
-        /*
-         * ------------------------------------------------------------
-         * Call TRON constant contract directly.
-         *
-         * TronWeb 5.3.5 may expose tuple[] returned by Solidity
-         * as:
-         *
-         * [
-         *     [],
-         *     [],
-         *     []
-         * ]
-         *
-         * Therefore we bypass TronWeb's tuple conversion and decode
-         * the raw constant_result ourselves using ethers.
-         * ------------------------------------------------------------
-         */
+        const url =
+            "https://nile.trongrid.io/wallet/triggerconstantcontract";
 
-        const response = await fetch(
-            "https://nile.trongrid.io/wallet/triggerconstantcontract",
-            {
-                method: "POST",
+        const body = {
+            owner_address:
+                tronWeb.defaultAddress.base58,
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+            contract_address:
+                process.env.CONTRACT_ADDRESS,
 
-                body: JSON.stringify({
-                    owner_address:
-                        tronWeb.defaultAddress.base58,
+            function_selector:
+                "getDocuments(string)",
 
-                    contract_address:
-                        process.env.CONTRACT_ADDRESS,
+            parameter,
 
-                    function_selector:
-                        "getDocuments(string)",
+            visible: true
+        };
 
-                    parameter,
-
-                    visible: true
-                })
-            }
+        console.log(
+            "TRON CONSTANT URL:",
+            url
         );
 
-        if (!response.ok) {
+        console.log(
+            "TRON CONSTANT BODY:",
+            JSON.stringify(body, null, 2)
+        );
+
+        let response;
+        let lastError;
+
+        /*
+         * Retry constant call in case of temporary
+         * DNS / network / fetch failure.
+         */
+        for (let attempt = 1; attempt <= 5; attempt++) {
+
+            try {
+
+                console.log(
+                    `TRON CONSTANT REQUEST ATTEMPT ${attempt}/5`
+                );
+
+                response = await fetch(
+                    url,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            ...(process.env.TRONGRID_API_KEY
+                                ? {
+                                    "TRON-PRO-API-KEY":
+                                        process.env.TRONGRID_API_KEY
+                                }
+                                : {})
+                        },
+
+                        body: JSON.stringify(body)
+                    }
+                );
+
+                break;
+
+            } catch (error) {
+
+                lastError = error;
+
+                console.log(
+                    `TRON CONSTANT FETCH ERROR ATTEMPT ${attempt}:`,
+                    error?.message
+                );
+
+                if (attempt < 5) {
+
+                    await new Promise(
+                        resolve =>
+                            setTimeout(
+                                resolve,
+                                1500
+                            )
+                    );
+                }
+            }
+        }
+
+        if (!response) {
+
             throw new Error(
-                `TRON constant call failed: HTTP ${response.status}`
+                `TRON constant contract request failed after 5 attempts: ${
+                    lastError?.message || "Unknown fetch error"
+                }`
             );
         }
 
-        const result = await response.json();
+        console.log(
+            "TRON CONSTANT HTTP STATUS:",
+            response.status
+        );
+
+        const result =
+            await response.json();
 
         console.log(
             "TRON CONSTANT CONTRACT RESPONSE:",
-            JSON.stringify(result, null, 2)
+            JSON.stringify(
+                result,
+                null,
+                2
+            )
         );
+
+        if (!response.ok) {
+
+            throw new Error(
+                `TRON constant call failed: HTTP ${
+                    response.status
+                } - ${
+                    result?.message ||
+                    "Unknown TRON error"
+                }`
+            );
+        }
 
         if (
             !result ||
-            !Array.isArray(result.constant_result) ||
+            !Array.isArray(
+                result.constant_result
+            ) ||
             result.constant_result.length === 0
         ) {
+
             throw new Error(
                 "Blockchain returned no constant result for getDocuments"
             );
         }
 
         const rawResult =
-            "0x" + result.constant_result[0];
+            "0x" +
+            result.constant_result[0];
 
         console.log(
             "GET DOCUMENTS RAW HEX:",
             rawResult
         );
-
-        /*
-         * ------------------------------------------------------------
-         * Decode the raw Solidity return value.
-         * ------------------------------------------------------------
-         */
 
         const decoded =
             iface.decodeFunctionResult(
@@ -764,12 +826,6 @@ const getDocumentsFromBlockchain = async (propertyId) => {
             decoded
         );
 
-        /*
-         * decodeFunctionResult returns a Result object.
-         *
-         * The first output is the Document[] array.
-         */
-
         const documents =
             decoded[0];
 
@@ -778,64 +834,70 @@ const getDocumentsFromBlockchain = async (propertyId) => {
             documents.length
         );
 
-        /*
-         * ------------------------------------------------------------
-         * Normalize decoded tuples
-         * ------------------------------------------------------------
-         */
-
         const normalizedDocuments =
-            documents.map((doc, index) => {
+            documents.map(
+                (doc, index) => {
 
-                const propertyIdValue =
-                    doc.propertyId ??
-                    doc[0];
+                    const propertyIdValue =
+                        doc.propertyId ??
+                        doc[0];
 
-                const documentHashValue =
-                    doc.documentHash ??
-                    doc[1];
+                    const documentHashValue =
+                        doc.documentHash ??
+                        doc[1];
 
-                const documentURIValue =
-                    doc.documentURI ??
-                    doc[2];
+                    const documentURIValue =
+                        doc.documentURI ??
+                        doc[2];
 
-                const issueDateValue =
-                    doc.issueDate ??
-                    doc[3];
+                    const issueDateValue =
+                        doc.issueDate ??
+                        doc[3];
 
-                const statusValue =
-                    doc.status ??
-                    doc[4];
+                    const statusValue =
+                        doc.status ??
+                        doc[4];
 
-                return {
-                    index,
+                    return {
+                        index,
 
-                    propertyId:
-                        propertyIdValue !== undefined
-                            ? String(propertyIdValue)
-                            : null,
+                        propertyId:
+                            propertyIdValue !== undefined
+                                ? String(
+                                    propertyIdValue
+                                )
+                                : null,
 
-                    documentHash:
-                        documentHashValue !== undefined
-                            ? String(documentHashValue)
-                            : null,
+                        documentHash:
+                            documentHashValue !== undefined
+                                ? String(
+                                    documentHashValue
+                                )
+                                : null,
 
-                    documentURI:
-                        documentURIValue !== undefined
-                            ? String(documentURIValue)
-                            : null,
+                        documentURI:
+                            documentURIValue !== undefined
+                                ? String(
+                                    documentURIValue
+                                )
+                                : null,
 
-                    issueDate:
-                        issueDateValue !== undefined
-                            ? String(issueDateValue)
-                            : null,
+                        issueDate:
+                            issueDateValue !== undefined
+                                ? String(
+                                    issueDateValue
+                                )
+                                : null,
 
-                    status:
-                        statusValue !== undefined
-                            ? Number(statusValue.toString())
-                            : null
-                };
-            });
+                        status:
+                            statusValue !== undefined
+                                ? Number(
+                                    statusValue.toString()
+                                )
+                                : null
+                    };
+                }
+            );
 
         console.log(
             "NORMALIZED DOCUMENTS:",

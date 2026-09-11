@@ -502,36 +502,25 @@ const rejectDocument = async(req,res)=>{
 
 // REVOKE DOCUMENT
 const revokeDocument = async (req, res) => {
-
     try {
+        const { documentId } = req.params;
 
-        const {
+        const document = await Document.findOne({
             documentId
-        } = req.params;
-
-
-        const document =
-            await Document.findOne({
-                documentId
-            });
-
+        });
 
         if (!document) {
-
             return errorResponse(
                 res,
                 "Document not found",
                 404
             );
-
         }
-
 
         const blockchainDocuments =
             await getDocumentsFromBlockchain(
                 document.propertyId
             );
-
 
         const documentIndex =
             blockchainDocuments.findIndex(
@@ -545,25 +534,28 @@ const revokeDocument = async (req, res) => {
                     ).toLowerCase()
             );
 
-
         if (documentIndex === -1) {
-
             return errorResponse(
                 res,
                 "Document not found on blockchain",
                 404
             );
-
         }
 
-
+        // Revoke document on blockchain
         const blockchainTx =
             await revokeDocumentOnBlockchain(
                 document.propertyId,
                 documentIndex
             );
 
+        // Save transaction cost AFTER blockchain transaction
+        await saveTransactionCost(
+            blockchainTx,
+            "REVOKE_DOCUMENT"
+        );
 
+        // Update MongoDB document
         document.status = "Revoked";
 
         document.revokedBy =
@@ -575,23 +567,16 @@ const revokeDocument = async (req, res) => {
         document.blockchainTxId =
             blockchainTx;
 
-
         await document.save();
 
-
-        await saveTransactionCost(
-            blockchainTx,
-            "REVOKE_DOCUMENT"
-        );
-
-
+        // Audit log
         await createAuditLog({
-
             action: "REVOKE_DOCUMENT",
 
             entity: "Document",
 
-            entityId: document.documentId,
+            entityId:
+                document.documentId,
 
             performedBy:
                 req.user?.walletAddress || "Admin",
@@ -602,17 +587,13 @@ const revokeDocument = async (req, res) => {
             ipAddress: req.ip,
 
             details: {
-
                 propertyId:
                     document.propertyId,
 
                 blockchainTxId:
                     blockchainTx
-
             }
-
         });
-
 
         return successResponse(
             res,
@@ -623,27 +604,20 @@ const revokeDocument = async (req, res) => {
             "Document revoked successfully"
         );
 
-
-    }
-    catch (error) {
+    } catch (error) {
 
         console.log(
             "REVOKE DOCUMENT ERROR:",
             error?.message
         );
 
-
         return errorResponse(
             res,
             error.message,
             500
         );
-
     }
-
 };
-
-
 
 // UPLOAD DOCUMENT
 const uploadDocument = async(req,res)=>{
