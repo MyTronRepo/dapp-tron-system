@@ -22,6 +22,35 @@ const getTronWeb = () => {
     return tronWeb;
 };
 
+const handleBlockchainError = (error) => {
+    console.error(
+        "BLOCKCHAIN TRANSACTION ERROR:",
+        error
+    );
+
+  const message = String(
+    error?.message ||
+    error?.code ||
+    error?.data?.message ||
+    error?.data?.error ||
+    error ||
+    ""
+).toLowerCase();
+
+    if (
+        message.includes("user rejected") ||
+        message.includes("rejected") ||
+        message.includes("declined") ||
+        message.includes("cancelled") ||
+        message.includes("canceled")
+    ) {
+        throw new Error(
+            "Transaction rejected by user"
+        );
+    }
+
+    throw error;
+};
 
 // ==============================
 // CONNECT TRONLINK
@@ -363,7 +392,10 @@ export const createTransferRequest = async (
     const contract =
         await getContract();
 
-    const transaction =
+    let transaction;
+
+try {
+    transaction =
         await contract
             .createTransferRequest(
                 propertyId,
@@ -373,6 +405,9 @@ export const createTransferRequest = async (
             .send({
                 feeLimit: 100_000_000
             });
+} catch (error) {
+    handleBlockchainError(error);
+}
 
     console.log(
         "TRANSFER REQUEST TX:",
